@@ -1,0 +1,21 @@
+Native Windows MSVC execution, revision 90d448157ae524bbbc96427557987733169a20c3.
+Job: https://github.com/rwong01/freedf/actions/runs/38651240907/job/116150282560
+Backend tests/build/identity persistence passed. The job later failed at NSIS path handling, subsequently corrected. No Windows GUI acceptance is implied.
+
+2026-10-14T23:03:54.1099396Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.36s
+2026-10-14T23:03:54.1382514Z test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+2026-10-14T23:03:54.8196699Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.67s
+2026-10-14T23:03:54.8472911Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+2026-10-14T23:03:54.8560140Z test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:03:56.4546098Z test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.59s
+2026-10-14T23:03:56.5691926Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:03:56.6554976Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:03:56.7199394Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:03:56.8162437Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:03:56.9060367Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:04:24.2120972Z test tests::actual_render_and_search ... ok
+2026-10-14T23:04:24.2121562Z test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+2026-10-14T23:04:24.3044400Z test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+2026-10-14T23:09:43.6338460Z     Finished `release` profile [optimized] target(s) in 5m 19s
+2026-10-14T23:09:43.9438998Z OS-protected identity loaded and signed successfully; fingerprint 3e9de4e2476b2269325763ec82b068eecabc9251918ea02590c817df03b7794b
+2026-10-14T23:09:44.0573228Z OS-protected identity loaded and signed successfully; fingerprint 3e9de4e2476b2269325763ec82b068eecabc9251918ea02590c817df03b7794b

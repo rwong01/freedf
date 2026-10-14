@@ -3,16 +3,16 @@ Processing script file: "packaging/windows/installer.nsi" (UTF8)
 Processed 1 file, writing output (x86-unicode):
 
 Output: "/home/rebecca/openpdf/dist/OpenPDF-Desktop-0.1.0-windows-x64-setup.exe"
-Install: 5 pages (320 bytes), 1 section (4120 bytes), 2601 instructions (72828 bytes), 867 strings (121504 bytes), 1 language table (318 bytes).
-Uninstall: 2 pages (192 bytes), 1 section (4120 bytes), 2284 instructions (63952 bytes), 2330 strings (198424 bytes), 1 language table (250 bytes).
+Install: 5 pages (320 bytes), 1 section (4120 bytes), 2602 instructions (72856 bytes), 868 strings (121526 bytes), 1 language table (318 bytes).
+Uninstall: 2 pages (192 bytes), 1 section (4120 bytes), 2285 instructions (63980 bytes), 2331 strings (198462 bytes), 1 language table (250 bytes).
 Datablock optimizer saved 1520 KiB (~10.6%).
 
 Using zlib compression.
 
 EXE header size:              113664 / 100352 bytes
-Install code:                  32261 / 197506 bytes
-Install data:               12881440 / 33746410 bytes
-Uninstall code+data:           34115 / 39056 bytes
-CRC (0x86155E1D):                  4 / 4 bytes
+Install code:                  32286 / 197556 bytes
+Install data:               12883696 / 33752890 bytes
+Uninstall code+data:           34141 / 39065 bytes
+CRC (0xEB7438ED):                  4 / 4 bytes
 
-Total size:                 13061484 / 34083328 bytes (38.3%)
+Total size:                 13063791 / 34089867 bytes (38.3%)

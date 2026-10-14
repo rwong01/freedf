@@ -27,8 +27,8 @@ signed-byte tampering. These checks do not establish certificate-chain trust.
 
 Native GitHub Actions has also executed Windows unit tests, PDFium integration,
 release compilation and real Credential Manager identity reuse. Linux and macOS
-ARM64 build/test/package jobs have passed on earlier revisions. Latest source
-revalidation is tracked at https://github.com/rwong01/freedf/actions. Interactive
+ARM64 build/test/package jobs have passed on earlier revisions. The final corrected source passed native ARM64 CI; remaining platform
+revalidation is tracked at https://github.com/rwong01/freedf/actions/runs/38652821545. Interactive
 Windows/macOS desktop behavior, printers, and clean installation remain unverified.
 
 ## Build and launch
@@ -53,6 +53,7 @@ Local build outputs are under `dist/` (ignored by Git):
 - `linux-x64/openpdf`: Linux executable with adjacent libpdfium.so.
 - `OpenPDF-Desktop-0.1.0-linux-x64.deb`: Ubuntu 24.04 x64 package.
 - `OpenPDF-Desktop-0.1.0-linux-x64.tar.gz`: Linux archive.
+- `OpenPDF-Desktop-0.1.0-mac-arm64.tar.gz`: native CI-built macOS application bundle; unsigned, interactive UI unverified.
 - `OpenPDF-Desktop-0.1.0-source.tar.gz`: corresponding source with locked Rust
   dependency sources; it resolves offline from an empty Cargo home.
 
