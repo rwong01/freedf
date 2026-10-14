@@ -56,7 +56,8 @@ means code exists but the complete acceptance workflow remains unverified.
 | First-use local identity setup | Tested | Actual UI name entry, native Save dialog, real protected identity, signed copy reopened; gui-cryptographic-first.pdf |
 | Secure P-256 identity generation | Tested | Random identities differ; PKCS#12 wrong-password rejection |
 | OS-protected identity persistence/reuse | Tested | CLI and two actual GUI processes; Poppler/OpenSSL confirm identical embedded certificate fingerprints matching the protected profile |
-| Windows Credential Manager/macOS Keychain | Implemented | Native keyring backends compiled/configured; runtime unverified |
+| Windows Credential Manager | Tested | Native Windows CI signed twice in separate processes with the same stored identity |
+| macOS Keychain | Implemented | Backend compiled; actual protected-store workflow unverified |
 | Non-exportable CNG/Secure Enclave keys | Not started | Exportable key limitation disclosed; PKCS#12 signer needs external-provider adaptation |
 | Certificate details/fingerprint/dates | Implemented | Preferences shows local certificate metadata |
 | Identity import/export/renewal/rollover | Not started | Existing identity never silently replaced; migration not promised |

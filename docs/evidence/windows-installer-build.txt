@@ -2,7 +2,7 @@ Processing script file: "packaging/windows/installer.nsi" (UTF8)
 
 Processed 1 file, writing output (x86-unicode):
 
-Output: "../../dist/OpenPDF-Desktop-0.1.0-windows-x64-setup.exe"
+Output: "/home/rebecca/openpdf/dist/OpenPDF-Desktop-0.1.0-windows-x64-setup.exe"
 Install: 5 pages (320 bytes), 1 section (4120 bytes), 2601 instructions (72828 bytes), 867 strings (121504 bytes), 1 language table (318 bytes).
 Uninstall: 2 pages (192 bytes), 1 section (4120 bytes), 2284 instructions (63952 bytes), 2330 strings (198424 bytes), 1 language table (250 bytes).
 Datablock optimizer saved 1520 KiB (~10.6%).

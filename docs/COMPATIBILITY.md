@@ -21,6 +21,7 @@ produced an application bundle. Its interactive desktop UI remains untested.
 | One ECDSA CMS signature | Pass | Internal verifier and Poppler pdfsig |
 | Second incremental signature | Pass | Both signatures valid in Poppler; first does not cover appended revision |
 | Signed-byte tampering | Pass | Poppler reports Digest Mismatch; internal verification false |
+| Native Windows Credential Manager reuse | Pass | CI job 116150282560: two processes, same certificate fingerprint; GUI and installer acceptance remain unverified |
 | OS-protected identity reused across two processes | Pass | evidence/keychain-test.txt; same fingerprint; evidence/keychain-signed.pdf |
 | qpdf validates twice-signed PDF | Pass | No syntax/stream encoding errors |
 | Independent signer trust | Not established | Self-signed certificate; pdfsig used -nocert |

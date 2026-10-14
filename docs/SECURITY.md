@@ -28,8 +28,8 @@ Secure Enclave keys**. The current signer requires complete in-memory PKCS#12.
 Top-level secrets are zeroized; upstream parser/signing allocations may contain
 copies until freed. Swap/core dumps and compromise of the logged-in account are
 outside the current protection guarantee. Linux tests cover an encrypted Secret
-Service keyring, not every desktop's service configuration. Windows/macOS stores
-are not runtime-tested. Certificates do not independently establish legal identity.
+Service keyring, not every desktop's service configuration. Windows Credential Manager was exercised in native CI; macOS Keychain
+remains unverified. Certificates do not independently establish legal identity.
 
 Identity import, renewal, backup, replacement and migration are not yet exposed.
 Keep the profile and OS credential store intact. Copying identity.json alone is
