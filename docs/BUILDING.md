@@ -67,3 +67,11 @@ this subset does not establish complete release acceptance.
 
 GitHub runner labels were checked against the [official runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job).
 The configured macOS labels select ARM64 and Intel separately.
+
+For the complete interactive digital-signing acceptance test, start
+`scripts/gui_signing_session.py` under a fresh `dbus-run-session` on Xvfb with
+gnome-keyring and the GTK desktop portal installed. It opens two successive app
+processes, uses a private temporary encrypted keyring, checks identity reuse and
+independently verifies both files with Poppler. Follow its required evidence file
+names in the Save dialog. `scripts/gui_close.py` sends a normal window-close event
+when no window manager is present. Never run these harnesses on a user's session.

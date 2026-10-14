@@ -1,7 +1,30 @@
 //! Offline PDF signature adapter; trust is never inferred from mathematical validity.
 use anyhow::{Context, Result, ensure};
 use openpdf_identity::SigningMaterial;
-pub use pdf_signer::{Appearance, SignatureReport, VerifiedSignature};
+pub use pdf_signer::{SignatureReport, VerifiedSignature};
+
+/// Application-level appearance: page indices are zero-based, as in the document model.
+#[derive(Clone, Debug)]
+pub struct Appearance {
+    pub page: usize,
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+    pub text: String,
+}
+impl Default for Appearance {
+    fn default() -> Self {
+        Self {
+            page: 0,
+            x: 36.,
+            y: 36.,
+            width: 260.,
+            height: 70.,
+            text: String::new(),
+        }
+    }
+}
 
 pub trait PdfSigner {
     fn sign(
@@ -43,6 +66,29 @@ impl PdfSigner for OfflineSigner {
             before.signatures.iter().all(|s| s.valid),
             "An existing signature failed integrity verification. Signing is blocked."
         );
+        let appearance = appearance
+            .map(|a| -> Result<pdf_signer::Appearance> {
+                ensure!(
+                    a.page < doc.get_pages().len(),
+                    "Signature page is out of range"
+                );
+                ensure!(
+                    [a.x, a.y, a.width, a.height].iter().all(|n| n.is_finite())
+                        && a.width > 0.
+                        && a.height > 0.,
+                    "Invalid signature rectangle"
+                );
+                Ok(pdf_signer::Appearance {
+                    page: a.page + 1,
+                    x: a.x,
+                    y: a.y,
+                    width: a.width,
+                    height: a.height,
+                    text: a.text,
+                    ..Default::default()
+                })
+            })
+            .transpose()?;
         let opts = pdf_signer::SignOptions {
             name: Some(identity.info.display_name.clone()),
             contact_info: if identity.info.email.is_empty() {
@@ -100,6 +146,63 @@ mod tests {
         tampered[pos] = b'X';
         let report = OfflineSigner.verify(&tampered).unwrap();
         assert!(!report.signatures[0].valid);
+    }
+    #[test]
+    fn visible_signature_targets_first_and_last_model_page() {
+        let identity = openpdf_identity::generate("Page placement test", "").unwrap();
+        let input = openpdf_document::fixtures::sample(3, false);
+        for page in [0, 2] {
+            let output = OfflineSigner
+                .sign(
+                    &input,
+                    &identity,
+                    Some(Appearance {
+                        page,
+                        text: "Page placement test".into(),
+                        ..Default::default()
+                    }),
+                )
+                .unwrap();
+            let doc = lopdf::Document::load_mem(&output).unwrap();
+            let target = doc.get_pages()[&(page as u32 + 1)];
+            let signature_pages: Vec<_> = doc
+                .get_pages()
+                .values()
+                .filter(|id| {
+                    doc.get_dictionary(**id)
+                        .ok()
+                        .and_then(|d| d.get(b"Annots").ok())
+                        .and_then(|o| o.as_array().ok())
+                        .is_some_and(|annots| {
+                            annots.iter().any(|a| {
+                                a.as_reference()
+                                    .ok()
+                                    .and_then(|id| doc.get_dictionary(id).ok())
+                                    .is_some_and(|d| {
+                                        d.get(b"FT")
+                                            .and_then(lopdf::Object::as_name)
+                                            .is_ok_and(|n| n == b"Sig")
+                                    })
+                            })
+                        })
+                })
+                .copied()
+                .collect();
+            assert_eq!(signature_pages, vec![target]);
+            assert!(OfflineSigner.verify(&output).unwrap().document_intact);
+        }
+        assert!(
+            OfflineSigner
+                .sign(
+                    &input,
+                    &identity,
+                    Some(Appearance {
+                        page: 3,
+                        ..Default::default()
+                    })
+                )
+                .is_err()
+        );
     }
     #[test]
     fn certification_restrictions_refused() {

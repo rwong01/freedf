@@ -1,2 +1,3 @@
+    Checking openpdf-signatures v0.1.0 (/home/rebecca/openpdf/crates/signatures)
     Checking openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)
-    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.40s
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 1.75s

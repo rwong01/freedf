@@ -23,10 +23,16 @@ with tempfile.TemporaryDirectory(prefix='openpdf-gui-sign-') as folder:
   for name in ['xdg-desktop-portal-gtk','xdg-desktop-portal']:
    processes.append(subprocess.Popen([str(bin_dir/name)],env=env));time.sleep(1)
   fingerprints=[]
+  started=time.time()
   for n,fixture in enumerate(['forms.pdf','edited.pdf'],1):
    print(f'Opening signing window {n}; sign through the UI, then close it to continue.',flush=True)
    proc=subprocess.Popen([os.environ.get('OPENPDF_TEST_BINARY',str(root/'target/release/openpdf-app')),str(root/'fixtures'/fixture)],env=env);processes.append(proc)
    code=proc.wait();assert code==0,f'Application exit {code}'
+   output=root/'docs/evidence'/('gui-cryptographic-first.pdf' if n==1 else 'gui-cryptographic-second.pdf')
+   assert output.is_file() and output.stat().st_mtime>=started,'Save the signed PDF at '+str(output)
+   verified=subprocess.run(['pdfsig','-nocert',str(output)],text=True,capture_output=True,check=True)
+   assert 'Signature is Valid' in verified.stdout,verified.stdout+verified.stderr
+   (root/'docs/evidence'/f'pdfsig-gui-{n}.txt').write_text(verified.stdout+verified.stderr)
    identities=list(pathlib.Path(env['XDG_DATA_HOME']).rglob('identity.json'))
    assert len(identities)==1,'Complete identity setup and signing before closing the window'
    fingerprints.append(json.loads(identities[0].read_text())['info']['fingerprint'])

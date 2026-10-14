@@ -1,0 +1,7 @@
+{
+  "independent_certificate_extraction": "Poppler CMS extraction + OpenSSL X.509 DER",
+  "first_sha256": "c0b8317078e55976b290d6ee6f59df2c627ad1d1717624bdac25845e304bbb89",
+  "second_sha256": "c0b8317078e55976b290d6ee6f59df2c627ad1d1717624bdac25845e304bbb89",
+  "matches_gui_profile": true,
+  "trust": "self-signed; independently verified identity not established"
+}

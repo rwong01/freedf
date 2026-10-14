@@ -53,9 +53,9 @@ means code exists but the complete acceptance workflow remains unverified.
 | Saved reusable appearances/delete | Implemented | Explicit local save, private filesystem permissions; no default/rename UI yet |
 | Initials/date/checkmark shortcuts | In progress | Initials via type; generic text/ink work; date/checkmark shortcuts pending |
 | Flatten Copy | Not started | No misleading flatten button |
-| First-use local identity setup | Implemented | Display name/email UI and production store; complete GUI signing workflow unverified |
+| First-use local identity setup | Tested | Actual UI name entry, native Save dialog, real protected identity, signed copy reopened; gui-cryptographic-first.pdf |
 | Secure P-256 identity generation | Tested | Random identities differ; PKCS#12 wrong-password rejection |
-| OS-protected identity persistence/reuse | Tested | Isolated Linux Secret Service, two application processes, same fingerprint; evidence/keychain-test.txt |
+| OS-protected identity persistence/reuse | Tested | CLI and two actual GUI processes; Poppler/OpenSSL confirm identical embedded certificate fingerprints matching the protected profile |
 | Windows Credential Manager/macOS Keychain | Implemented | Native keyring backends compiled/configured; runtime unverified |
 | Non-exportable CNG/Secure Enclave keys | Not started | Exportable key limitation disclosed; PKCS#12 signer needs external-provider adaptation |
 | Certificate details/fingerprint/dates | Implemented | Preferences shows local certificate metadata |

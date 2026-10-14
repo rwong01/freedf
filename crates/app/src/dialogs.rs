@@ -203,24 +203,26 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
             return;
         }
         let g = model.pages[t.page];
-        let rect = t
+        let (page, rect) = t
             .selected
             .and_then(|id| model.edits.annotations.iter().find(|a| a.id == id))
-            .map(|a| a.rect)
-            .unwrap_or(Rect {
-                left: g.crop.left + 30.,
-                bottom: g.crop.bottom + 30.,
-                right: (g.crop.left + 300.).min(g.crop.right - 10.),
-                top: g.crop.bottom + 100.,
-            });
+            .map(|a| (a.page, a.rect))
+            .unwrap_or((
+                t.page,
+                Rect {
+                    left: g.crop.left + 30.,
+                    bottom: g.crop.bottom + 30.,
+                    right: (g.crop.left + 300.).min(g.crop.right - 10.),
+                    top: g.crop.bottom + 100.,
+                },
+            ));
         let appearance = openpdf_signatures::Appearance {
-            page: t.page,
+            page,
             x: rect.left as f64,
             y: rect.bottom as f64,
             width: rect.width() as f64,
             height: rect.height() as f64,
             text: "Digitally signed with OpenPDF\nLocal self-signed identity".into(),
-            ..Default::default()
         };
         let id = t.id;
         t.busy = true;

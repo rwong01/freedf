@@ -15,6 +15,7 @@ Apple Preview, clean Windows installation or macOS runtime was available.
 | Actual GUI select + copy | Pass | evidence/gui-copy.png; X clipboard returned selected sentence |
 | Draw/place/save visual signature through GUI | Pass | evidence/gui-drawn-signature.pdf; independent Poppler rendering in poppler-drawn-signature.png |
 | Reopen PDFs in two document tabs | Pass | evidence/gui-copy.png shows both reopened files |
+| Full first-use GUI signing and restart/reuse | Pass | Native GTK Save dialog; two PDFs independently valid; gui-certificate-continuity.json proves same embedded certificate |
 | One ECDSA CMS signature | Pass | Internal verifier and Poppler pdfsig |
 | Second incremental signature | Pass | Both signatures valid in Poppler; first does not cover appended revision |
 | Signed-byte tampering | Pass | Poppler reports Digest Mismatch; internal verification false |

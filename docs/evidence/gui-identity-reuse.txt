@@ -1,0 +1,2 @@
+Two actual GUI application processes used the same protected test identity.
+c0b8317078e55976b290d6ee6f59df2c627ad1d1717624bdac25845e304bbb89

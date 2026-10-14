@@ -1,0 +1,9 @@
+   Compiling openpdf-signatures v0.1.0 (/home/rebecca/openpdf/crates/signatures)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.36s
+     Running unittests src/lib.rs (target/debug/deps/openpdf_signatures-df370e282976393d)
+
+running 1 test
+test tests::visible_signature_targets_first_and_last_model_page ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 2 filtered out; finished in 2.70s
+

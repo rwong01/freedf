@@ -1,0 +1,12 @@
+Digital Signature Info of: /home/rebecca/openpdf/docs/evidence/gui-cryptographic-first.pdf
+Signature #1:
+  - Signature Field Name: Signature28
+  - Signer Certificate Common Name: Headless GUI Test Signer
+  - Signer full Distinguished Name: CN=Headless GUI Test Signer
+  - Signing Time: Oct 14 2026 16:03:18
+  - Signing Hash Algorithm: SHA-256
+  - Signature Type: ETSI.CAdES.detached
+  - Signed Ranges: [0 - 5330], [65332 - 66230]
+  - Total document signed
+  - Signature Validation: Signature is Valid.
+NSS_Init failed: security library: bad database.
