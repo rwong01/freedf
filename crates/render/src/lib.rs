@@ -368,5 +368,23 @@ mod tests {
         assert!(r.rgba.iter().any(|b| *b < 100));
         assert_eq!(search_page(&d, 0, "searchable").unwrap().len(), 1);
         assert!(r.glyphs.iter().any(|g| g.text == "O"));
+        for rotation in [90, 180, 270] {
+            let r = render(
+                &d,
+                RenderKey {
+                    document: 1,
+                    page: 0,
+                    width: 612,
+                    rotation,
+                },
+            )
+            .unwrap();
+            let expected = if rotation == 180 {
+                612. / 792.
+            } else {
+                792. / 612.
+            };
+            assert!((r.width as f32 / r.height as f32 - expected).abs() < 0.01);
+        }
     }
 }

@@ -77,7 +77,7 @@ impl App {
                     for stroke in&self.signature_strokes{for pair in stroke.windows(2){ui.painter().line_segment([rect.left_top()+egui::vec2(pair[0].x,180.-pair[0].y),rect.left_top()+egui::vec2(pair[1].x,180.-pair[1].y)],egui::Stroke::new(2.,Color32::from_rgb(20,50,110)));}}
                     if ui.button("Clear drawing").clicked(){self.signature_strokes.clear();}
                 }
-                1=>{ui.label("Name or initials (ASCII in this build)");ui.text_edit_singleline(&mut self.signature_name);ui.label(egui::RichText::new(&self.signature_name).size(30.).italics());ui.weak("Current appearance uses Helvetica Oblique. Handwritten font styles are pending.");}
+                1=>{ui.label("Name or initials");ui.text_edit_singleline(&mut self.signature_name);ui.horizontal(|ui|{ui.selectable_value(&mut self.signature_style,0,"Caveat");ui.selectable_value(&mut self.signature_style,1,"Dancing Script");});let family=if self.signature_style==0{"Caveat"}else{"Dancing Script"};ui.label(egui::RichText::new(&self.signature_name).font(egui::FontId::new(36.,egui::FontFamily::Name(family.into()))));ui.weak("Bundled handwritten fonts · SIL Open Font License");}
                 2=>{if ui.button("Choose PNG or JPEG…").clicked()&& let Some(path)=rfd::FileDialog::new().add_filter("Signature images",&["png","jpg","jpeg"]).pick_file(){match std::fs::read(path){Ok(bytes)if bytes.len()<=20*1024*1024=>{
                     let result=(||->anyhow::Result<_>{let mut reader=image::ImageReader::new(std::io::Cursor::new(&bytes)).with_guessed_format()?;let mut limits=image::Limits::default();limits.max_image_width=Some(4096);limits.max_image_height=Some(4096);limits.max_alloc=Some(80*1024*1024);reader.limits(limits);let im=reader.decode()?;anyhow::ensure!(im.width()>0&&im.height()>0,"Empty image");Ok(())})();match result{Ok(())=>self.signature_image=Some(bytes),Err(e)=>self.error=Some(e.to_string())}
                 },Ok(_)=>self.error=Some("Signature image exceeds 20 MiB".into()),Err(e)=>self.error=Some(e.to_string())}}
@@ -87,7 +87,7 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
             }
             if self.signature_mode<3 {
                 ui.separator();ui.label("Click Place, then click the page. Use Select to move it; resize in Comments.");
-                let ready=match self.signature_mode{0=>self.signature_strokes.iter().any(|s|s.len()>1),1=>!self.signature_name.trim().is_empty()&&self.signature_name.is_ascii(),_=>self.signature_image.is_some()};
+                let ready=match self.signature_mode{0=>self.signature_strokes.iter().any(|s|s.len()>1),1=>!self.signature_name.trim().is_empty(),_=>self.signature_image.is_some()};
                 ui.horizontal(|ui|{
                     if ui.add_enabled(ready,egui::Button::new("Place signature")).clicked(){self.placement=self.make_appearance();self.tool=Tool::Signature;self.signature_dialog=false;}
                     if ui.add_enabled(ready,egui::Button::new("Save reusable appearance locally")).clicked()&& let Some(a)=self.make_appearance(){let dir=self.profile.join("appearances");let result=(||->anyhow::Result<()>{std::fs::create_dir_all(&dir)?;#[cfg(unix)]{use std::os::unix::fs::PermissionsExt;std::fs::set_permissions(&dir,std::fs::Permissions::from_mode(0o700))?;}let mut tmp=tempfile::NamedTempFile::new_in(&dir)?;tmp.write_all(&serde_json::to_vec(&a)?)?;tmp.as_file().sync_all()?;let name=format!("signature-{}.json",std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis());tmp.persist_noclobber(dir.join(name)).map_err(|e|e.error)?;Ok(())})();match result{Ok(())=>self.status="Signature appearance saved locally".into(),Err(e)=>self.error=Some(e.to_string())}}
@@ -98,7 +98,30 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
             self.signature_dialog = false;
         }
     }
-    fn make_appearance(&self) -> Option<Annotation> {
+    fn make_appearance(&mut self) -> Option<Annotation> {
+        if self.signature_mode == 1 {
+            return match signature_appearance::typed(&self.signature_name, self.signature_style) {
+                Ok((bytes, aspect)) => {
+                    let mut a = Annotation::new(
+                        0,
+                        0,
+                        AnnotationKind::Image,
+                        Rect {
+                            left: 0.,
+                            bottom: 0.,
+                            right: 270.,
+                            top: 270. * aspect,
+                        },
+                    );
+                    a.image = Some(bytes);
+                    Some(a)
+                }
+                Err(e) => {
+                    self.error = Some(e.to_string());
+                    None
+                }
+            };
+        }
         let kind = match self.signature_mode {
             0 => AnnotationKind::Ink,
             1 => AnnotationKind::FreeText,

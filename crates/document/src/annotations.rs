@@ -194,16 +194,11 @@ pub(super) fn write(doc: &mut Document, items: &[Annotation], old: &[ObjectId]) 
                 );
             }
             AnnotationKind::Line => {
-                d.set(
-                    "L",
-                    vec![
-                        a.rect.left.into(),
-                        a.rect.bottom.into(),
-                        a.rect.right.into(),
-                        a.rect.top.into(),
-                    ],
-                );
-                cmd += &format!("0 0 m {w} {h} l S");
+                let [a, b] = a.line_points();
+                d.set("L", vec![a.x.into(), a.y.into(), b.x.into(), b.y.into()]);
+                let a = local(a);
+                let b = local(b);
+                cmd += &format!("{} {} m {} {} l S", a.x, a.y, b.x, b.y);
             }
             AnnotationKind::Image => {}
         }

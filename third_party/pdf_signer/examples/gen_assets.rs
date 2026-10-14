@@ -1,0 +1,20 @@
+//! Generate reproducible demo assets: `sample.pdf` and `keystore.p12`.
+//!
+//! ```sh
+//! cargo run --features testkit --example gen_assets
+//! cargo run --features cli -- sign sample.pdf signed.pdf keystore.p12 -p password
+//! cargo run --features cli -- verify signed.pdf
+//! ```
+
+use pdf_signer::testkit::{
+    sample_pdf, self_signed_p12, self_signed_p256_p12, self_signed_p384_p12,
+};
+
+fn main() -> std::io::Result<()> {
+    std::fs::write("sample.pdf", sample_pdf())?;
+    std::fs::write("keystore.p12", self_signed_p12("password"))?;
+    std::fs::write("keystore_p256.p12", self_signed_p256_p12("password"))?;
+    std::fs::write("keystore_p384.p12", self_signed_p384_p12("password"))?;
+    println!("wrote sample.pdf and keystore{{,_p256,_p384}}.p12 (password: 'password')");
+    Ok(())
+}

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=OpenPDF Desktop
+Comment=Offline PDF reader and signer (development release)
+Exec=openpdf %F
+Icon=org.openpdf.Desktop
+Terminal=false
+Categories=Office;Viewer;
+MimeType=application/pdf;
+StartupNotify=true

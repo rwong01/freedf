@@ -1,0 +1,102 @@
+name: Build and verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            runtime: linux-x64
+            package: linux-x64
+            library: vendor/pdfium/lib/libpdfium.so
+            binary: target/release/openpdf-app
+          - os: windows-2022
+            runtime: win-x64
+            package: windows-x64
+            library: vendor/pdfium-win/bin/pdfium.dll
+            binary: target/release/openpdf-app.exe
+          - os: macos-14
+            runtime: mac-arm64
+            package: mac-arm64
+            library: vendor/pdfium-mac-arm64/lib/libpdfium.dylib
+            binary: target/release/openpdf-app
+          - os: macos-15-intel
+            runtime: mac-x64
+            package: mac-x64
+            library: vendor/pdfium-mac/lib/libpdfium.dylib
+            binary: target/release/openpdf-app
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Rust toolchain
+        run: rustup toolchain install 1.99.0 --profile minimal --component clippy,rustfmt && rustup default 1.99.0
+      - name: Linux dependencies
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libxkbcommon-dev libxkbcommon-x11-0 libwayland-dev libgl1-mesa-dev libegl1-mesa-dev pkg-config qpdf poppler-utils xvfb xdotool xclip scrot gnome-keyring
+      - name: PDFium runtime
+        run: python3 scripts/fetch_pdfium.py '${{ matrix.runtime }}'
+      - run: cargo fetch --locked
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - name: PDFium rendering integration
+        env:
+          OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
+        run: cargo test -p openpdf-render --locked -- --ignored
+      - run: cargo build --release --locked -p openpdf-app
+      - name: Generate interoperability fixtures
+        env:
+          OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
+        run: '${{ matrix.binary }} --validate-fixtures fixtures'
+      - name: Independent PDF validation
+        if: runner.os == 'Linux'
+        run: |
+          qpdf --check fixtures/edited.pdf
+          qpdf --check fixtures/signed-twice.pdf
+          pdfsig -nocert fixtures/signed-twice.pdf | tee fixtures/pdfsig.txt
+          test "$(grep -c 'Signature is Valid' fixtures/pdfsig.txt)" = 2
+          pdfsig -nocert fixtures/tampered.pdf | tee fixtures/tamper.txt
+          grep -q 'Digest Mismatch' fixtures/tamper.txt
+      - name: Real Linux GUI acceptance subset
+        if: runner.os == 'Linux'
+        env:
+          OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' dbus-run-session -- scripts/gui_acceptance.sh
+      - name: Dependency notices
+        run: python3 scripts/third_party.py
+      - name: Package
+        run: python3 scripts/package.py '${{ matrix.package }}' --binary '${{ matrix.binary }}'
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        run: |
+          choco install nsis --no-progress -y
+          '/c/Program Files (x86)/NSIS/makensis.exe' packaging/windows/installer.nsi
+      - name: Upload development artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: openpdf-${{ matrix.package }}
+          path: |
+            dist/OpenPDF-Desktop-*.exe
+            dist/OpenPDF-Desktop-*.zip
+            dist/OpenPDF-Desktop-*.deb
+            dist/OpenPDF-Desktop-*.tar.gz
+            dist/*-SHA256.json
+            fixtures/internal-validation.json
+            docs/evidence/gui-ci-*
+            docs/evidence/gui-clipboard.txt
+          if-no-files-found: error
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: cargo install cargo-audit --version 0.22.2 --locked
+      - run: cargo audit

@@ -15,6 +15,7 @@ use std::{
 };
 mod canvas;
 mod dialogs;
+mod signature_appearance;
 mod validation;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -100,6 +101,7 @@ enum Job {
         id: u64,
         message: String,
     },
+    #[cfg(not(windows))]
     Printed {
         id: u64,
     },
@@ -139,6 +141,7 @@ struct App {
     signature_strokes: Vec<Vec<Point>>,
     signature_drawing: bool,
     signature_mode: usize,
+    signature_style: usize,
     signature_name: String,
     signature_image: Option<Vec<u8>>,
     placement: Option<Annotation>,
@@ -150,8 +153,11 @@ struct App {
     password: String,
     profile: PathBuf,
     print_dialog: bool,
+    #[cfg(not(windows))]
     printer: String,
+    #[cfg(not(windows))]
     print_range: String,
+    #[cfg(not(windows))]
     copies: u32,
     printing_available: bool,
 }
@@ -167,6 +173,19 @@ impl App {
         } else {
             egui::Visuals::light()
         });
+        let mut fonts = egui::FontDefinitions::default();
+        for (name, bytes) in [
+            ("Caveat", signature_appearance::CAVEAT),
+            ("Dancing Script", signature_appearance::DANCING),
+        ] {
+            fonts
+                .font_data
+                .insert(name.into(), Arc::new(egui::FontData::from_static(bytes)));
+            fonts
+                .families
+                .insert(egui::FontFamily::Name(name.into()), vec![name.into()]);
+        }
+        cc.egui_ctx.set_fonts(fonts);
         cc.egui_ctx.all_styles_mut(|style| {
             style.spacing.item_spacing = egui::vec2(8., 8.);
             style.spacing.button_padding = egui::vec2(10., 6.);
@@ -207,6 +226,7 @@ impl App {
             signature_strokes: vec![],
             signature_drawing: false,
             signature_mode: 0,
+            signature_style: 0,
             signature_name: String::new(),
             signature_image: None,
             placement: None,
@@ -218,8 +238,11 @@ impl App {
             password: String::new(),
             profile,
             print_dialog: false,
+            #[cfg(not(windows))]
             printer: String::new(),
+            #[cfg(not(windows))]
             print_range: String::new(),
+            #[cfg(not(windows))]
             copies: 1,
             printing_available: cfg!(windows)
                 || (cfg!(target_os = "linux")
@@ -379,6 +402,7 @@ impl App {
                     }
                     self.error = Some(message);
                 }
+                #[cfg(not(windows))]
                 Job::Printed { id } => {
                     if let Some(t) = self.tabs.iter_mut().find(|t| t.id == id) {
                         t.busy = false;
@@ -402,6 +426,15 @@ impl App {
                     .into();
                 }
                 Event::Opened { id, model } => {
+                    self.next_id = self.next_id.max(
+                        model
+                            .edits
+                            .annotations
+                            .iter()
+                            .map(|a| a.id.saturating_add(1))
+                            .max()
+                            .unwrap_or(1),
+                    );
                     if let Some(t) = self.tabs.iter_mut().find(|t| t.id == id) {
                         t.model = Some(*model);
                         t.busy = false;
@@ -579,7 +612,12 @@ impl App {
                 m.redo();
             }
             if !ctx.egui_wants_keyboard_input() {
-                if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::C)) {
+                if ctx.input(|i| {
+                    i.events
+                        .iter()
+                        .any(|event| matches!(event, egui::Event::Copy))
+                }) || ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::C))
+                {
                     ctx.copy_text(t.selection.iter().map(|(_, _, s)| s.as_str()).collect());
                 }
                 if ctx.input(|i| i.key_pressed(egui::Key::PageDown)) {
@@ -692,6 +730,13 @@ if ui.button("Next").clicked(){t.match_index=(t.match_index+1)%t.matches.len();t
 
 fn main() -> anyhow::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().is_some_and(|a| a == "--validate-keychain") {
+        return validation::identity_roundtrip(
+            args.get(1)
+                .map(PathBuf::from)
+                .ok_or_else(|| anyhow::anyhow!("Supply an isolated identity test directory"))?,
+        );
+    }
     if args.first().is_some_and(|a| a == "--validate-fixtures") {
         return validation::run(
             args.get(1)
@@ -700,9 +745,16 @@ fn main() -> anyhow::Result<()> {
         );
     }
     let paths = args.into_iter().map(PathBuf::from).collect();
+    let icon = image::load_from_memory(include_bytes!("../../../assets/icon.png"))?.into_rgba8();
+    let icon = egui::IconData {
+        width: icon.width(),
+        height: icon.height(),
+        rgba: icon.into_raw(),
+    };
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_title("OpenPDF Desktop")
+            .with_icon(icon)
             .with_inner_size([1280., 900.])
             .with_min_inner_size([900., 620.]),
         ..Default::default()

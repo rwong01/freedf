@@ -74,3 +74,8 @@ can be made from this host.
 OCR, page organization, conversion, redaction, and external identity providers can
 be added behind document/renderer/identity interfaces. No dynamic plugin runtime
 is introduced. True redaction must never reuse a rectangle annotation operation.
+
+The signer is now a GPL source copy in `third_party/pdf_signer`, with upstream
+authorship and exact base revision recorded. Its lopdf dependency was upgraded
+to 0.44 after cargo-audit found the old parser's recursion vulnerability.
+See `OPENPDF_PATCHES.md` there and SECURITY.md for the remaining RSA advisory.

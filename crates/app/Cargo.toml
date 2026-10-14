@@ -18,3 +18,4 @@ openpdf-render = { path = "../render" }
 openpdf-persistence = { path = "../persistence" }
 openpdf-identity = { path = "../identity" }
 openpdf-signatures = { path = "../signatures" }
+fontdue = "0.9.3"

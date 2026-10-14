@@ -8,7 +8,7 @@ license.workspace = true
 anyhow.workspace = true
 lopdf.workspace = true
 openpdf-identity = { path = "../identity" }
-pdf_signer = { git = "https://github.com/StrategicProjects/pdf_signer.git", rev = "6cc0218100d9ffc038f8dccee3b707e5bd136100" }
+pdf_signer = { path = "../../third_party/pdf_signer" }
 
 [dev-dependencies]
 openpdf-document = { path = "../document" }

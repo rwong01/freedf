@@ -1,5 +1,32 @@
 use super::*;
 use anyhow::Result;
+pub fn identity_roundtrip(directory: PathBuf) -> Result<()> {
+    std::fs::create_dir_all(&directory)?;
+    let store = LocalIdentityStore::new(directory.join("identity"));
+    let identity = match store.load()? {
+        Some(i) => i,
+        None => store.create("OpenPDF Keychain Test", "")?,
+    };
+    let previous = directory.join("fingerprint.txt");
+    if previous.exists() {
+        anyhow::ensure!(
+            std::fs::read_to_string(&previous)? == identity.info.fingerprint,
+            "Persisted identity changed between processes"
+        );
+    }
+    std::fs::write(previous, &identity.info.fingerprint)?;
+    let signed = OfflineSigner.sign(
+        &openpdf_document::fixtures::sample(1, false),
+        &identity,
+        None,
+    )?;
+    openpdf_persistence::save_pdf(&directory.join("keychain-signed.pdf"), &signed, None)?;
+    println!(
+        "OS-protected identity loaded and signed successfully; fingerprint {}",
+        identity.info.fingerprint
+    );
+    Ok(())
+}
 pub fn run(directory: PathBuf) -> Result<()> {
     std::fs::create_dir_all(&directory)?;
     let start = Instant::now();
@@ -64,11 +91,25 @@ pub fn run(directory: PathBuf) -> Result<()> {
         }
         model.change(|e| e.annotations.push(a))?;
     }
+    let (appearance, aspect) = signature_appearance::typed("Alice Example", 0)?;
+    let mut visual = Annotation::new(
+        100,
+        2,
+        AnnotationKind::Image,
+        Rect {
+            left: 50.,
+            bottom: 450.,
+            right: 320.,
+            top: 450. + 270. * aspect,
+        },
+    );
+    visual.image = Some(appearance);
+    model.change(|e| e.annotations.push(visual))?;
     let edited = model.serialize()?;
     openpdf_persistence::save_pdf(&directory.join("edited.pdf"), &edited, None)?;
     let reopened = DocumentModel::open(edited.clone(), None)?;
     anyhow::ensure!(
-        reopened.edits.annotations.len() == 9,
+        reopened.edits.annotations.len() == 10,
         "Annotation roundtrip failed"
     );
     let identity = openpdf_identity::generate("OpenPDF Automated Test Identity", "")?;

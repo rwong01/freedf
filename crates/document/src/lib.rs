@@ -138,6 +138,24 @@ impl Annotation {
             image: None,
         }
     }
+    pub fn line_points(&self) -> [Point; 2] {
+        if let Some(s) = self.strokes.first()
+            && let (Some(a), Some(b)) = (s.first(), s.last())
+        {
+            [*a, *b]
+        } else {
+            [
+                Point {
+                    x: self.rect.left,
+                    y: self.rect.bottom,
+                },
+                Point {
+                    x: self.rect.right,
+                    y: self.rect.top,
+                },
+            ]
+        }
+    }
     pub fn move_to(&mut self, rect: Rect) {
         let sx = rect.width() / self.rect.width().max(0.01);
         let sy = rect.height() / self.rect.height().max(0.01);
@@ -434,7 +452,11 @@ fn read_bookmarks(doc: &Document, pages: &BTreeMap<u32, ObjectId>) -> Vec<(Strin
         pages: &BTreeMap<u32, ObjectId>,
         out: &mut Vec<(String, usize)>,
         seen: &mut std::collections::HashSet<ObjectId>,
+        depth: usize,
     ) {
+        if depth >= 64 {
+            return;
+        }
         while out.len() < 10000 && seen.insert(id) {
             let Ok(d) = doc.get_dictionary(id) else { break };
             if let Ok(dest) = d.get(b"Dest").or_else(|_| {
@@ -453,7 +475,7 @@ fn read_bookmarks(doc: &Document, pages: &BTreeMap<u32, ObjectId>) -> Vec<(Strin
             if seen.len() < 10000
                 && let Ok(child) = d.get(b"First").and_then(Object::as_reference)
             {
-                walk(doc, child, pages, out, seen);
+                walk(doc, child, pages, out, seen, depth + 1);
             }
             let Ok(next) = d.get(b"Next").and_then(Object::as_reference) else {
                 break;
@@ -468,7 +490,7 @@ fn read_bookmarks(doc: &Document, pages: &BTreeMap<u32, ObjectId>) -> Vec<(Strin
         && let Ok(d) = doc.get_dictionary(outlines)
         && let Ok(first) = d.get(b"First").and_then(Object::as_reference)
     {
-        walk(doc, first, pages, &mut out, &mut Default::default());
+        walk(doc, first, pages, &mut out, &mut Default::default(), 0);
     }
     out
 }

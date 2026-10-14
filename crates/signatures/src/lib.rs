@@ -82,6 +82,10 @@ mod tests {
         let identity = openpdf_identity::generate("Test Signer", "").unwrap();
         let pdf = openpdf_document::fixtures::sample(2, false);
         let signed = OfflineSigner.sign(&pdf, &identity, None).unwrap();
+        let mut protected = openpdf_document::DocumentModel::open(signed.clone(), None).unwrap();
+        assert!(!protected.editable());
+        assert!(protected.change(|e| e.annotations.clear()).is_err());
+        assert_eq!(protected.serialize().unwrap(), signed);
         let report = OfflineSigner.verify(&signed).unwrap();
         assert!(report.document_intact);
         assert_eq!(report.signatures[0].chain_trusted, None);
@@ -96,5 +100,23 @@ mod tests {
         tampered[pos] = b'X';
         let report = OfflineSigner.verify(&tampered).unwrap();
         assert!(!report.signatures[0].valid);
+    }
+    #[test]
+    fn certification_restrictions_refused() {
+        let identity = openpdf_identity::generate("Policy Test", "").unwrap();
+        let mut doc =
+            lopdf::Document::load_mem(&openpdf_document::fixtures::sample(1, false)).unwrap();
+        let root = doc.trailer.get(b"Root").unwrap().as_reference().unwrap();
+        doc.get_dictionary_mut(root)
+            .unwrap()
+            .set("Perms", lopdf::Dictionary::new());
+        let mut bytes = vec![];
+        doc.save_to(&mut bytes).unwrap();
+        assert!(
+            !openpdf_document::DocumentModel::open(bytes.clone(), None)
+                .unwrap()
+                .editable()
+        );
+        assert!(OfflineSigner.sign(&bytes, &identity, None).is_err());
     }
 }

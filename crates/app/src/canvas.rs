@@ -203,7 +203,7 @@ impl App {
                             let mut value = m.edits.fields.get(&f.id).unwrap_or(&f.value).clone();
                             let mut changed = false;
                             ui.add_enabled_ui(m.editable() && !t.busy && !f.readonly, |ui| {
-                                changed = field_widget(ui, &f, &mut value);
+                                changed = field_widget(ui, &f, &mut value, false);
                             });
                             if changed {
                                 let _ = m.change(|e| {
@@ -396,15 +396,28 @@ impl App {
                     });
                 if let Some(p) = point {
                     if response.drag_started() {
-                        self.drag_start = Some(p);
-                        self.stroke = vec![p];
+                        let anchor = ui
+                            .ctx()
+                            .input(|i| i.pointer.press_origin())
+                            .map(|position| {
+                                g.from_display(
+                                    Point {
+                                        x: (position.x - rect.left()) / zoom,
+                                        y: (position.y - rect.top()) / zoom,
+                                    },
+                                    rotation,
+                                )
+                            })
+                            .unwrap_or(p);
+                        self.drag_start = Some(anchor);
+                        self.stroke = vec![anchor];
                         if self.tool == Tool::Select {
                             t.selected = m
                                 .edits
                                 .annotations
                                 .iter()
                                 .rev()
-                                .find(|a| a.page == page && a.rect.contains(p))
+                                .find(|a| a.page == page && a.rect.contains(anchor))
                                 .map(|a| a.id);
                         }
                     }
@@ -532,6 +545,9 @@ impl App {
                                 a.color = self.color;
                                 a.opacity = self.opacity;
                                 a.width = self.stroke_width;
+                                if kind == AnnotationKind::Line {
+                                    a.strokes = vec![vec![start, p]];
+                                }
                                 a.text = self.annotation_text.clone();
                                 if matches!(
                                     kind,
@@ -608,7 +624,7 @@ impl App {
                 });
                 if editable && (g.rotation + rotation) % 360 == 0 {
                     for f in &m.fields {
-                        if f.page != page {
+                        if f.page != page || f.readonly || matches!(f.kind, FieldKind::Signature) {
                             continue;
                         }
                         let field_rect = screen_rect(g, f.rect, rotation, rect.min, zoom);
@@ -616,8 +632,20 @@ impl App {
                         let mut changed = false;
                         ui.scope_builder(egui::UiBuilder::new().max_rect(field_rect), |ui| {
                             ui.set_clip_rect(field_rect);
+                            // Editable controls replace the saved widget appearance on screen.
+                            // Cover the entire widget so old values never show behind pending input.
+                            ui.painter().rect_filled(field_rect, 0., Color32::WHITE);
+                            ui.painter().rect_stroke(
+                                field_rect,
+                                0.,
+                                Stroke::new(1., Color32::LIGHT_GRAY),
+                                StrokeKind::Inside,
+                            );
+                            ui.style_mut().override_font_id =
+                                Some(egui::FontId::proportional((12. * zoom).clamp(9., 72.)));
+                            ui.spacing_mut().interact_size.y = field_rect.height().min(24. * zoom);
                             ui.add_enabled_ui(!f.readonly, |ui| {
-                                changed = field_widget(ui, f, &mut value);
+                                changed = field_widget(ui, f, &mut value, true);
                             });
                         });
                         if changed {
@@ -648,18 +676,30 @@ impl App {
     }
 }
 
-fn field_widget(ui: &mut egui::Ui, f: &openpdf_document::Field, value: &mut FieldValue) -> bool {
+fn field_widget(
+    ui: &mut egui::Ui,
+    f: &openpdf_document::Field,
+    value: &mut FieldValue,
+    overlay: bool,
+) -> bool {
     match (&f.kind, value) {
         (FieldKind::Text { multiline }, FieldValue::Text(s)) => {
+            let size = if overlay {
+                ui.available_size()
+            } else {
+                egui::vec2(ui.available_width(), if *multiline { 48. } else { 24. })
+            };
             if *multiline {
-                ui.add(
+                ui.add_sized(
+                    size,
                     egui::TextEdit::multiline(s)
                         .desired_width(f32::INFINITY)
                         .desired_rows(2),
                 )
                 .changed()
             } else {
-                ui.add(
+                ui.add_sized(
+                    size,
                     egui::TextEdit::singleline(s)
                         .desired_width(f32::INFINITY)
                         .hint_text(&f.name),
@@ -683,7 +723,11 @@ fn field_widget(ui: &mut egui::Ui, f: &openpdf_document::Field, value: &mut Fiel
             changed
         }
         (FieldKind::Radio, FieldValue::Button(s)) => {
-            if ui.radio(s == &f.on_value, &f.on_value).clicked() {
+            if ui
+                .radio(s == &f.on_value, if overlay { "" } else { &f.on_value })
+                .on_hover_text(&f.name)
+                .clicked()
+            {
                 *s = f.on_value.clone();
                 true
             } else {
@@ -782,28 +826,11 @@ fn paint_annotation(
             ));
         }
         AnnotationKind::Line => {
+            let [a, b] = a.line_points();
             painter.line_segment(
                 [
-                    screen(
-                        g,
-                        Point {
-                            x: a.rect.left,
-                            y: a.rect.bottom,
-                        },
-                        rotation,
-                        origin,
-                        zoom,
-                    ),
-                    screen(
-                        g,
-                        Point {
-                            x: a.rect.right,
-                            y: a.rect.top,
-                        },
-                        rotation,
-                        origin,
-                        zoom,
-                    ),
+                    screen(g, a, rotation, origin, zoom),
+                    screen(g, b, rotation, origin, zoom),
                 ],
                 stroke,
             );

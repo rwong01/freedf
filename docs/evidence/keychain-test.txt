@@ -1,0 +1,3 @@
+Two separate application processes, same isolated OS Secret Service.
+OS-protected identity loaded and signed successfully; fingerprint 2a066631b3ccb62f799330ce8998f53ed379fa5df5c55de8a0832047ffbae8c0
+OS-protected identity loaded and signed successfully; fingerprint 2a066631b3ccb62f799330ce8998f53ed379fa5df5c55de8a0832047ffbae8c0
