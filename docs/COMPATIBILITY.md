@@ -23,6 +23,7 @@ Apple Preview, clean Windows installation or macOS runtime was available.
 | Independent signer trust | Not established | Self-signed certificate; pdfsig used -nocert |
 | Pixel-level renderer comparison | Unverified | No visual-regression pass claimed |
 | Third-party application form/annotation interaction | Unverified | A parser check does not establish interactive interoperability |
+| Packaged Linux runtime loading | Pass | dist/linux-x64/openpdf generated and verified fixtures with its adjacent PDFium, without OPENPDF_PDFIUM |
 | Native Windows/macOS launch and printing | Unverified | Cross-build does not establish runtime correctness |
 | Acrobat/Chrome/Edge/Preview | Unverified | Not executed |
 
@@ -34,4 +35,6 @@ reported as a trusted certificate-chain result.
 
 Initial debug-run measurement: first fixture render at 816px took 67 ms; complete
 internal fixture generation/signing/validation took 2,890 ms. These are individual
-observations, not performance guarantees. See fixtures/internal-validation.json.
+observations, not performance guarantees. The later optimized release run measured 16 ms for that render, 308 ms for the
+complete fixture workflow, and 34,492 KiB peak RSS (the fixture process, not GUI
+memory). See fixtures/internal-validation.json and evidence/fixture-resource-use.txt.

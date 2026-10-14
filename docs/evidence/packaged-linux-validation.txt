@@ -1,0 +1,8 @@
+{
+  "identity_fingerprint": "7e5ed3218c10c91c69172d79cb308cfa1cf8d129342b6f6d13e35794cf984970",
+  "independent_validation": "Run qpdf and pdfsig; this report is internal validation only",
+  "render_816px_ms": 16,
+  "signed_bytes": 466933,
+  "tests": "forms/annotations roundtrip, signature, reuse, second incremental signature, tampering, PDFium rendering",
+  "total_ms": 466
+}

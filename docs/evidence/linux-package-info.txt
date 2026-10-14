@@ -1,0 +1,12 @@
+ new Debian package, version 2.0.
+ size 11713688 bytes: control archive=369 bytes.
+     405 bytes,     9 lines      control
+ Package: openpdf-desktop
+ Version: 0.1.0
+ Section: graphics
+ Priority: optional
+ Architecture: amd64
+ Maintainer: OpenPDF contributors <openpdf@localhost>
+ Depends: libc6 (>= 2.39), libx11-6, libxkbcommon0, libxkbcommon-x11-0, libgl1, libegl1, libwayland-client0
+ Recommends: gnome-keyring, cups-client, xdg-desktop-portal, xdg-desktop-portal-gtk
+ Description: Offline PDF reader and signer (development release)

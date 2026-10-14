@@ -1,0 +1,11 @@
+{
+  "qpdf-forms": "passed syntax/stream check",
+  "qpdf-edited": "passed syntax/stream check",
+  "qpdf-signed": "passed syntax/stream check",
+  "qpdf-signed-twice": "passed syntax/stream check",
+  "two-incremental-signatures": "both cryptographically valid; certificate trust not checked",
+  "tampering": "digest mismatch detected",
+  "os-keystore-signature": "cryptographically valid; certificate trust not checked",
+  "persisted-form": "Poppler extracted Alice Example",
+  "structures": "ten annotation kinds including transparent typed signature; AcroForm retained"
+}

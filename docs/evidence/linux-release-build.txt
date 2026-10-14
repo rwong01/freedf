@@ -30,3 +30,4 @@
    Compiling rfd v0.15.4
    Compiling openpdf-persistence v0.1.0 (/home/rebecca/openpdf/crates/persistence)
    Compiling openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)
+    Finished `release` profile [optimized] target(s) in 6m 25s

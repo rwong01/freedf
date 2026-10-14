@@ -26,3 +26,6 @@
    Compiling openpdf-render v0.1.0 (/home/rebecca/openpdf/crates/render)
    Compiling openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)
     Finished `release` profile [optimized] target(s) in 2m 24s
+    Blocking waiting for file lock on build directory
+   Compiling openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)
+    Finished `release` profile [optimized] target(s) in 3m 41s

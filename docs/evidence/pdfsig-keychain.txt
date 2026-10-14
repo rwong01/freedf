@@ -1,0 +1,12 @@
+Digital Signature Info of: docs/evidence/keychain-signed.pdf
+Signature #1:
+  - Signature Field Name: Signature7
+  - Signer Certificate Common Name: OpenPDF Keychain Test
+  - Signer full Distinguished Name: CN=OpenPDF Keychain Test
+  - Signing Time: Oct 14 2026 15:54:43
+  - Signing Hash Algorithm: SHA-256
+  - Signature Type: ETSI.CAdES.detached
+  - Signed Ranges: [0 - 1073], [61075 - 61489]
+  - Total document signed
+  - Signature Validation: Signature is Valid.
+NSS_Init failed: security library: bad database.

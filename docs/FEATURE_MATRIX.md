@@ -8,7 +8,7 @@ means code exists but the complete acceptance workflow remains unverified.
 |---|---|---|
 | Modular Rust workspace and GPL license | Tested | Workspace builds; source split into app/document/render/persistence/identity/signatures |
 | Windows x64 executable | Tested | GNU cross-build on Linux; not run on Windows |
-| Windows clean-machine installation/uninstallation | Not started | Installer configuration exists; acceptance requires Windows VM |
+| Windows clean-machine installation/uninstallation | In progress | NSIS installer compiled locally; clean-machine acceptance requires Windows VM |
 | macOS Apple Silicon/x64 | In progress | Runtime checksums, bundle script and CI matrix; no macOS execution |
 | Linux desktop launch | Tested | Real eframe window under Xvfb + Mesa CPU renderer; screenshots in evidence |
 | Open via command-line argument | Tested | GUI opened generated forms.pdf |
@@ -46,10 +46,10 @@ means code exists but the complete acceptance workflow remains unverified.
 | Annotation undo/redo | Tested | Model history roundtrip; GUI buttons wired |
 | Existing third-party annotation editing | Not started | Existing objects preserved; only OpenPDF-owned annotations editable in current UI |
 | Draw visual signature | Tested | Actual mouse drawing, placement, Save; Poppler independently renders native ink in gui-drawn-signature.pdf; resize workflow pending |
-| Type visual signature | Tested | Two bundled OFL handwritten fonts; transparent appearance generation unit test |
+| Type visual signature | Tested | Two OFL fonts; transparent image generation, PDF persistence and independent Poppler rendering |
 | Import signature image/transparency | Implemented | PNG/JPEG limits, alpha mask XObject; end-to-end pending |
 | Signature cropping/background cleanup | Not started | Accurately labeled in UI |
-| Signature placement/movement/resizing | Implemented | Shared annotation geometry/history; actual saved/reopened appearance test pending |
+| Signature placement/movement/resizing | In progress | GUI drawing/placement/save and inspector resize (270→180 points) tested; movement acceptance pending |
 | Saved reusable appearances/delete | Implemented | Explicit local save, private filesystem permissions; no default/rename UI yet |
 | Initials/date/checkmark shortcuts | In progress | Initials via type; generic text/ink work; date/checkmark shortcuts pending |
 | Flatten Copy | Not started | No misleading flatten button |
@@ -81,11 +81,11 @@ means code exists but the complete acceptance workflow remains unverified.
 | Parser/renderer process sandbox | Not started | Native PDF parsing is in process; security release blocker |
 | File/page/bitmap/cache limits | Implemented | 256 MiB files, 10k pages, 4096 render dimension, 128 MiB texture cache |
 | Cancellation/obsolete request discard | In progress | Bounded queue; closed tabs discarded; zoom requests may finish unnecessarily |
-| Startup/render/search/save/memory benchmarks | In progress | Repeatable fixture command; 816px render measured 67ms in initial debug run; no target claims |
+| Startup/render/search/save/memory benchmarks | In progress | Optimized fixture run: 816px render 16ms, full fixture workflow 308ms, peak RSS 34,492KiB; GUI/startup/search benchmarks remain |
 | Accessibility/keyboard/focus | In progress | AccessKit, text controls and shortcuts present; assistive-technology acceptance pending |
 | Dependency audits | Blocked | Audit executed; vulnerable lopdf updated. RSA timing advisory and unmaintained ttf-parser warning remain; see SECURITY.md |
-| License notices/source distribution | In progress | SPDX inventory and bundled native/font licenses; source archive recipe |
+| License notices/source distribution | In progress | 597-package inventory, bundled native/font licenses, source archive with vendored dependencies; legal audit still pending |
 | GUI automation | Tested | Xvfb actual-window form, search and annotation interactions; partial acceptance only |
-| CI Windows/macOS/Linux | Implemented | Workflow checked into repository; no remote job execution claimed |
+| CI Windows/macOS/Linux | In progress | Native CI executing. Windows-only lint failure fixed; audit intentionally fails on remaining advisory. See CI run links |
 | Acrobat/Chrome/Edge/Preview compatibility | Not started | Not available/tested; Poppler results do not establish these |
 | Full reader/forms/signing/release acceptance | In progress | Individual evidence above; all requested v1 workflows not yet satisfied |

@@ -36,7 +36,15 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Cache Rust dependencies
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ runner.arch }}-rust199-${{ hashFiles('Cargo.lock') }}
       - name: Rust toolchain
         run: rustup toolchain install 1.99.0 --profile minimal --component clippy,rustfmt && rustup default 1.99.0
       - name: Linux dependencies
@@ -53,6 +61,11 @@ jobs:
           OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
         run: cargo test -p openpdf-render --locked -- --ignored
       - run: cargo build --release --locked -p openpdf-app
+      - name: Native Windows identity persistence
+        if: runner.os == 'Windows'
+        run: |
+          '${{ matrix.binary }}' --validate-keychain "$RUNNER_TEMP/openpdf-identity-ci"
+          '${{ matrix.binary }}' --validate-keychain "$RUNNER_TEMP/openpdf-identity-ci"
       - name: Generate interoperability fixtures
         env:
           OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
@@ -81,7 +94,7 @@ jobs:
           choco install nsis --no-progress -y
           '/c/Program Files (x86)/NSIS/makensis.exe' packaging/windows/installer.nsi
       - name: Upload development artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: openpdf-${{ matrix.package }}
           path: |
@@ -97,6 +110,6 @@ jobs:
   audit:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo audit

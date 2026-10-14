@@ -81,7 +81,7 @@ pub fn print(pdfium: &Pdfium, bytes: Vec<u8>) -> Result<bool> {
                 },
             )?;
             let mut pixels = raster.rgba;
-            for rgba in pixels.chunks_exact_mut(4) {
+            for rgba in pixels.as_chunks_mut::<4>().0 {
                 rgba.swap(0, 2);
             }
             let mut bitmap: BITMAPINFO = unsafe { std::mem::zeroed() };

@@ -282,7 +282,6 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
                     ctx.request_repaint();
                 });
             }
-            return;
         }
         #[cfg(not(windows))]
         self.print_cups_ui(ctx);
