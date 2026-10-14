@@ -301,14 +301,17 @@ impl App {
         scroll.show_viewport(ui, |ui, viewport| {
             ui.set_min_size(egui::vec2(max_width, total));
             let base = ui.min_rect().min;
-            let mut first_visible = true;
+            let mut most_visible = 0.;
             for (page, g, y, w, h) in pages {
                 if y + h < viewport.min.y - 50. || y > viewport.max.y + 50. {
                     continue;
                 }
-                if first_visible {
+                // Prefetch margins are not visible content. Select the page with
+                // the largest actual viewport intersection for navigation/signing.
+                let visible = (y + h).min(viewport.max.y) - y.max(viewport.min.y);
+                if visible > most_visible {
                     t.page = page;
-                    first_visible = false;
+                    most_visible = visible;
                 }
                 let rect = egui::Rect::from_min_size(
                     base + egui::vec2((max_width - w) / 2., y),

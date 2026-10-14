@@ -1,7 +1,9 @@
 # Compatibility evidence
 
 Executed on Ubuntu 24.04 / WSL, x86_64, 2026-10-14. No Acrobat, Chrome, Edge,
-Apple Preview, clean Windows installation or macOS runtime was available.
+Apple Preview or clean Windows installation was available locally. Native macOS
+ARM64 CI subsequently ran tests, PDFium integration and fixture validation, and
+produced an application bundle. Its interactive desktop UI remains untested.
 
 | Check | Result | Evidence |
 |---|---|---|
@@ -25,7 +27,7 @@ Apple Preview, clean Windows installation or macOS runtime was available.
 | Pixel-level renderer comparison | Unverified | No visual-regression pass claimed |
 | Third-party application form/annotation interaction | Unverified | A parser check does not establish interactive interoperability |
 | Packaged Linux runtime loading | Pass | dist/linux-x64/openpdf generated and verified fixtures with its adjacent PDFium, without OPENPDF_PDFIUM |
-| Native Windows/macOS launch and printing | Unverified | Cross-build does not establish runtime correctness |
+| Native Windows/macOS interactive launch and printing | Unverified | Build/CLI tests do not establish interactive desktop or printer correctness |
 | Acrobat/Chrome/Edge/Preview | Unverified | Not executed |
 
 Poppler 24.02.0 and qpdf 11.9.0 were used from locally extracted Ubuntu packages.

@@ -34,3 +34,4 @@
    Compiling openpdf-signatures v0.1.0 (/home/rebecca/openpdf/crates/signatures)
    Compiling openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)
     Finished `release` profile [optimized] target(s) in 2m 47s
+   Compiling openpdf-app v0.1.0 (/home/rebecca/openpdf/crates/app)

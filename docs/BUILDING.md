@@ -28,8 +28,9 @@ Uninstallation retains documents, signing identity, and profile data.
 
 The available environment cross-built Windows with a locally extracted MinGW
 compiler and x86_64-pc-windows-gnu Rust target. This proves compilation, not
-Windows runtime behavior. Native MSVC builds are configured in CI but have not
-been observed here. macOS builds have not been run.
+Windows interactive runtime behavior. Native MSVC builds are running in CI.
+macOS ARM64 native CI build/tests/packaging passed; Intel validation is tracked
+in the handoff. No macOS interactive desktop validation is claimed.
 
 ## Headless GUI testing
 

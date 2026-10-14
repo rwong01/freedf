@@ -1,0 +1,21 @@
+{
+  "original_rect": [
+    50,
+    450,
+    320,
+    550.6211
+  ],
+  "gui_moved_rect": [
+    233.05086,
+    364.57626,
+    503.05084,
+    465.19736
+  ],
+  "gui_undo_rect": [
+    50,
+    450,
+    320,
+    550.6211
+  ],
+  "result": "GUI movement persisted; GUI undo restored original geometry; checked page-referenced annotations"
+}

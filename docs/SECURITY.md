@@ -69,3 +69,8 @@ the dependency. The audit fails deliberately; no advisory is ignored. Replacing
 or separating that backend and reviewing exposure is a production-release gate.
 The transitive ttf-parser 0.25.1 also has an unmaintained warning
 (RUSTSEC-2026-0192). See evidence/cargo-audit.json for the exact report.
+
+Ordinary annotation deletion is not secure erasure. Rewritten PDFs may retain
+unreferenced prior objects and appearances; do not use this application for
+redaction or assume deleting a visible signature removes all recoverable asset
+bytes. Object pruning and a purpose-built redaction workflow remain future work.

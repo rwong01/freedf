@@ -9,7 +9,7 @@ means code exists but the complete acceptance workflow remains unverified.
 | Modular Rust workspace and GPL license | Tested | Workspace builds; source split into app/document/render/persistence/identity/signatures |
 | Windows x64 executable | Tested | GNU cross-build on Linux; not run on Windows |
 | Windows clean-machine installation/uninstallation | In progress | NSIS installer compiled locally; clean-machine acceptance requires Windows VM |
-| macOS Apple Silicon/x64 | In progress | Runtime checksums, bundle script and CI matrix; no macOS execution |
+| macOS Apple Silicon/x64 | In progress | ARM64 native CI build/tests/PDFium/packaging passed; Intel CI running. Interactive desktop validation remains unverified |
 | Linux desktop launch | Tested | Real eframe window under Xvfb + Mesa CPU renderer; screenshots in evidence |
 | Open via command-line argument | Tested | GUI opened generated forms.pdf |
 | Native file dialog and drag/drop | Implemented | Code present; dialog/drag-drop end-to-end tests pending |
@@ -19,7 +19,7 @@ means code exists but the complete acceptance workflow remains unverified.
 | PDFium rendering | Tested | Actual page rendering, text extraction, original forms fixture |
 | Lazy rendering/background owner worker | Tested | GUI screenshots/status; no startup rasterization of every page |
 | Continuous scrolling/single-page view | Implemented | Virtual page layout; manual full navigation test pending |
-| Thumbnails | Tested | Three actual PDF thumbnails in headless GUI |
+| Thumbnails | Tested | Actual thumbnails and navigation to page three; gui-page-navigation.png |
 | Zoom/fit/rotation | Implemented | Coordinate unit tests pass; all UI combinations unverified |
 | Crop/rotation/DPI transforms | Tested | Coordinate round trips; independent visual alignment cases still needed |
 | Mixed sizes/landscape/scanned/Unicode/embedded fonts | In progress | PDFium supports these; project-specific corpus coverage incomplete |
@@ -43,13 +43,13 @@ means code exists but the complete acceptance workflow remains unverified.
 | Ink, note, free text, rectangle, ellipse, line | Tested | Fixture creation/serialization; rectangle also drawn and saved through actual GUI |
 | Comment text/color/opacity/stroke | Implemented | Edit controls and PDF AP; broader tests pending |
 | Move/resize/delete annotations | Implemented | Select + drag, inspector dimensions, Delete key; actual GUI acceptance pending |
-| Annotation undo/redo | Tested | Model history roundtrip; GUI buttons wired |
+| Annotation undo/redo | Tested | Model history roundtrip; GUI move/save/undo/save independently restores geometry |
 | Existing third-party annotation editing | Not started | Existing objects preserved; only OpenPDF-owned annotations editable in current UI |
 | Draw visual signature | Tested | Actual mouse drawing, placement, Save; Poppler independently renders native ink in gui-drawn-signature.pdf; resize workflow pending |
 | Type visual signature | Tested | Two OFL fonts; transparent image generation, PDF persistence and independent Poppler rendering |
 | Import signature image/transparency | Implemented | PNG/JPEG limits, alpha mask XObject; end-to-end pending |
 | Signature cropping/background cleanup | Not started | Accurately labeled in UI |
-| Signature placement/movement/resizing | In progress | GUI drawing/placement/save and inspector resize (270→180 points) tested; movement acceptance pending |
+| Signature placement/movement/resizing | Tested | GUI drawing, placement, inspector resize and canvas move saved; qpdf confirms referenced geometry and GUI undo restoration |
 | Saved reusable appearances/delete | Implemented | Explicit local save, private filesystem permissions; no default/rename UI yet |
 | Initials/date/checkmark shortcuts | In progress | Initials via type; generic text/ink work; date/checkmark shortcuts pending |
 | Flatten Copy | Not started | No misleading flatten button |
@@ -86,6 +86,6 @@ means code exists but the complete acceptance workflow remains unverified.
 | Dependency audits | Blocked | Audit executed; vulnerable lopdf updated. RSA timing advisory and unmaintained ttf-parser warning remain; see SECURITY.md |
 | License notices/source distribution | In progress | 597-package inventory, bundled native/font licenses, source archive with vendored dependencies; legal audit still pending |
 | GUI automation | Tested | Xvfb actual-window form, search and annotation interactions; partial acceptance only |
-| CI Windows/macOS/Linux | In progress | Native CI executing. Windows-only lint failure fixed; audit intentionally fails on remaining advisory. See CI run links |
+| CI Windows/macOS/Linux | In progress | Native Linux and ARM64 jobs passed on earlier revisions; latest source is being verified. Windows/Intel jobs monitored; audit deliberately fails. See HANDOFF.md |
 | Acrobat/Chrome/Edge/Preview compatibility | Not started | Not available/tested; Poppler results do not establish these |
 | Full reader/forms/signing/release acceptance | In progress | Individual evidence above; all requested v1 workflows not yet satisfied |

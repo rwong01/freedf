@@ -14,7 +14,7 @@ These files contain only generated test names/certificates, never private keys.
 - gui-drawn-signature.pdf and poppler-drawn-signature.png: mouse-drawn signature
   placed and saved in the GUI, then rendered by independent Poppler.
 - gui-resized-signature.pdf: the signature width was changed from 270 to 180 PDF
-  points using the actual inspector and saved. Movement acceptance remains pending.
+  points using the actual inspector and saved. Canvas movement and undo were subsequently verified in gui-movement-validation.json, following page annotation references rather than orphaned objects.
 - keychain-test.txt/keychain-signed.pdf: production Secret Service storage tested
   with an isolated encrypted keyring, reused in two separate application processes.
 
