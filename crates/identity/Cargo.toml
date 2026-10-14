@@ -1,0 +1,19 @@
+[package]
+name = "openpdf-identity"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+zeroize.workspace = true
+rcgen = { version = "0.14.10", features = ["zeroize"] }
+p12-keystore = "0.1.5"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4"
+keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "async-secret-service", "async-io", "crypto-rust"] }
+tempfile.workspace = true
+time = "0.3"
