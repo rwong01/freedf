@@ -29,12 +29,23 @@ jobs:
           Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber | ConvertTo-Json | Set-Content reports/os.json
           Get-MpComputerStatus | ConvertTo-Json -Depth 5 | Set-Content reports/defender-before.json
           Start-Service WinDefend
+          # Hosted images can ship with real-time protection off. Enable it;
+          # never lower protection or add exclusions to make a scan pass.
+          Set-MpPreference -DisableRealtimeMonitoring $false
           Update-MpSignature
-          $status = Get-MpComputerStatus
+          for ($attempt = 0; $attempt -lt 10; $attempt++) {
+            $status = Get-MpComputerStatus
+            if ($status.RealTimeProtectionEnabled) { break }
+            Start-Sleep -Seconds 2
+          }
           $status | ConvertTo-Json -Depth 5 | Set-Content reports/defender-updated.json
           if (-not $status.AMServiceEnabled -or -not $status.AntivirusEnabled -or -not $status.RealTimeProtectionEnabled) {
             throw 'Defender is unavailable/inactive; results are inconclusive. No protection settings were weakened.'
           }
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile("$pwd/scripts/defender_scan.ps1", [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { throw ($parseErrors | Out-String) }
       - name: Download exact distributed package
         if: matrix.source == 'distributed'
         env:

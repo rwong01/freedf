@@ -34,6 +34,11 @@ not turn off real-time protection or restore quarantined files. Real-time
 quarantine can still make a sample unavailable, which fails the check. The
 workflow does not change exclusions, cloud protection, or allowlists.
 
+Initial run `38664357117` stopped before downloading samples: the hosted Windows
+image reported active antivirus but disabled real-time protection. This is an
+environment failure, not a malware finding or a clean scan. The preparation step
+now explicitly enables real-time protection and verifies it before proceeding.
+
 A no-detection result is specific to that artifact and scanner configuration.
 Windows Server CI can differ from consumer Windows cloud/behavioral detection.
 Different toolchains produce different binaries; a native build passing while
