@@ -104,6 +104,7 @@ pub fn run(directory: PathBuf) -> Result<()> {
         },
     );
     visual.image = Some(appearance);
+    visual.signature = true;
     model.change(|e| e.annotations.push(visual))?;
     let edited = model.serialize()?;
     openpdf_persistence::save_pdf(&directory.join("edited.pdf"), &edited, None)?;
@@ -113,6 +114,12 @@ pub fn run(directory: PathBuf) -> Result<()> {
         "Annotation roundtrip failed"
     );
     let identity = openpdf_identity::generate("OpenPDF Automated Test Identity", "")?;
+    let handwriting_certified = OfflineSigner.sign(&edited, &identity, None)?;
+    openpdf_persistence::save_pdf(
+        &directory.join("handwriting-certified.pdf"),
+        &handwriting_certified,
+        None,
+    )?;
     let signed = OfflineSigner.sign(
         &edited,
         &identity,
@@ -138,6 +145,18 @@ pub fn run(directory: PathBuf) -> Result<()> {
     );
     let pdfium = openpdf_render::bind()?;
     let doc = pdfium.load_pdf_from_byte_vec(edited, None)?;
+    let certified_doc = pdfium.load_pdf_from_byte_vec(handwriting_certified, None)?;
+    let appearance_key = RenderKey {
+        document: 1,
+        page: 2,
+        width: 816,
+        rotation: 0,
+    };
+    anyhow::ensure!(
+        openpdf_render::render(&doc, appearance_key)?.rgba
+            == openpdf_render::render(&certified_doc, appearance_key)?.rgba,
+        "Certificate signing changed or covered the placed handwriting"
+    );
     let render_start = Instant::now();
     let raster = openpdf_render::render(
         &doc,

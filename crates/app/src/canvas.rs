@@ -43,6 +43,80 @@ fn color(a: [f32; 3], opacity: f32) -> Color32 {
 }
 
 impl App {
+    pub(super) fn signature_controls(&mut self, ui: &mut egui::Ui) {
+        if self.tool == Tool::Signature {
+            ui.horizontal_wrapped(|ui| {
+                ui.strong("Place signature");
+                ui.label("Click for automatic sizing, or drag a box to fit.");
+                if ui.button("Cancel placement").clicked() {
+                    self.tool = Tool::Select;
+                    self.placement = None;
+                    self.drag_start = None;
+                }
+            });
+            return;
+        }
+        let Some(t) = self.tabs.get_mut(self.active) else {
+            return;
+        };
+        let Some(m) = t.model.as_mut() else { return };
+        let Some(a) = t
+            .selected
+            .and_then(|id| m.edits.annotations.iter().find(|a| a.id == id))
+            .cloned()
+        else {
+            return;
+        };
+        if !(a.signature || a.kind == AnnotationKind::Image) || !m.editable() || t.busy {
+            return;
+        }
+        let crop = m.pages[a.page].crop;
+        let mut target = None;
+        let mut delete = false;
+        ui.horizontal_wrapped(|ui| {
+            ui.strong("Signature selected");
+            if ui.button("Smaller −").clicked() {
+                target = Some(signature_layout::scaled(a.rect, 1. / 1.15, crop));
+            }
+            if ui.button("Larger +").clicked() {
+                target = Some(signature_layout::scaled(a.rect, 1.15, crop));
+            }
+            if ui.button("Auto size").clicked() {
+                target = Some(signature_placement(
+                    &a,
+                    m,
+                    a.page,
+                    signature_layout::center(a.rect),
+                    None,
+                ));
+            }
+            if ui.button("Delete").clicked() {
+                delete = true;
+            }
+            if ui.button("Done").clicked() {
+                t.selected = None;
+            }
+            ui.weak("Drag to move · Drag a corner to resize · Save when finished");
+        });
+        if let Some(rect) = target {
+            let mut edited = a.clone();
+            edited.move_to(rect);
+            if let Err(e) = m.change(|edits| {
+                if let Some(old) = edits.annotations.iter_mut().find(|v| v.id == a.id) {
+                    *old = edited;
+                }
+            }) {
+                self.error = Some(e.to_string());
+            }
+        }
+        if delete {
+            if let Err(e) = m.change(|e| e.annotations.retain(|v| v.id != a.id)) {
+                self.error = Some(e.to_string());
+            }
+            t.selected = None;
+        }
+    }
+
     pub(super) fn sidebar_ui(&mut self, ui: &mut egui::Ui) {
         ui.horizontal_wrapped(|ui| {
             for (i, label) in ["Pages", "Outline", "Comments", "Forms", "Signatures"]
@@ -372,15 +446,45 @@ impl App {
                 }
                 if m.editable() {
                     for a in &m.edits.annotations {
-                        if a.page == page {
-                            paint_annotation(ui, a, g, rotation, rect.min, zoom);
-                            if t.selected == Some(a.id) {
-                                ui.painter().rect_stroke(
-                                    screen_rect(g, a.rect, rotation, rect.min, zoom).expand(3.),
-                                    0.,
-                                    Stroke::new(1.5, Color32::from_rgb(30, 110, 230)),
-                                    StrokeKind::Outside,
-                                );
+                        if a.page != page { continue; }
+                        let mut preview=a.clone();
+                        if let Some((original,anchor))=&t.resizing
+                            && original.id==a.id
+                            && let Some(pointer)=ui.ctx().pointer_interact_pos() {
+                            let p=g.from_display(Point{x:(pointer.x-rect.left())/zoom,y:(pointer.y-rect.top())/zoom},rotation);
+                            preview.move_to(signature_layout::resize(original.rect,*anchor,p,g.crop));
+                        } else if self.tool==Tool::Select && t.selected==Some(a.id)
+                            && response.dragged() && let Some(start)=self.drag_start
+                            && let Some(pointer)=response.interact_pointer_pos() {
+                            let p=g.from_display(Point{x:(pointer.x-rect.left())/zoom,y:(pointer.y-rect.top())/zoom},rotation);
+                            preview.move_to(signature_layout::within(Rect{left:a.rect.left+p.x-start.x,right:a.rect.right+p.x-start.x,bottom:a.rect.bottom+p.y-start.y,top:a.rect.top+p.y-start.y},g.crop));
+                        }
+                        paint_annotation(ui,&preview,g,rotation,rect.min,zoom);
+                        if t.selected==Some(a.id) {
+                            let bounds=screen_rect(g,preview.rect,rotation,rect.min,zoom);
+                            let blue=Color32::from_rgb(30,110,230);
+                            ui.painter().rect_stroke(bounds.expand(2.),0.,Stroke::new(1.5,blue),StrokeKind::Outside);
+                            if editable && self.tool==Tool::Select && (a.signature||a.kind==AnnotationKind::Image) {
+                                let corners=[bounds.left_top(),bounds.right_top(),bounds.right_bottom(),bounds.left_bottom()];
+                                for (index,corner) in corners.iter().enumerate() {
+                                    let handle=ui.interact(egui::Rect::from_center_size(*corner,egui::vec2(18.,18.)),ui.id().with(("signature-handle",id,a.id,index)),Sense::drag())
+                                        .on_hover_cursor(if index%2==0 {egui::CursorIcon::ResizeNwSe} else {egui::CursorIcon::ResizeNeSw});
+                                    ui.painter().rect_filled(egui::Rect::from_center_size(*corner,egui::vec2(9.,9.)),2.,Color32::WHITE);
+                                    ui.painter().rect_stroke(egui::Rect::from_center_size(*corner,egui::vec2(9.,9.)),2.,Stroke::new(1.5,blue),StrokeKind::Inside);
+                                    if handle.drag_started() {
+                                        let opposite=corners[(index+2)%4];
+                                        let anchor=g.from_display(Point{x:(opposite.x-rect.left())/zoom,y:(opposite.y-rect.top())/zoom},rotation);
+                                        t.resizing=Some((a.clone(),anchor));
+                                        self.drag_start=None;
+                                    }
+                                    if handle.drag_stopped() && let Some((original,anchor))=t.resizing.take()
+                                        && let Some(pointer)=handle.interact_pointer_pos() {
+                                        let p=g.from_display(Point{x:(pointer.x-rect.left())/zoom,y:(pointer.y-rect.top())/zoom},rotation);
+                                        let mut edited=original.clone();
+                                        edited.move_to(signature_layout::resize(original.rect,anchor,p,g.crop));
+                                        move_annotation=Some(edited);
+                                    }
+                                }
                             }
                         }
                     }
@@ -398,7 +502,7 @@ impl App {
                         )
                     });
                 if let Some(p) = point {
-                    if response.drag_started() {
+                    if response.drag_started() && t.resizing.is_none() {
                         let anchor = ui
                             .ctx()
                             .input(|i| i.pointer.press_origin())
@@ -464,8 +568,8 @@ impl App {
                             .rev()
                             .find(|a| a.page == page && a.rect.contains(p))
                             .map(|a| a.id);
-                        if t.selected.is_some() {
-                            self.sidebar = 2;
+                        if t.selected.is_some_and(|id|m.edits.annotations.iter().any(|a|a.id==id&&!a.signature&&a.kind!=AnnotationKind::Image)) {
+                            self.sidebar=2;
                         }
                     }
                     if response.clicked() && editable {
@@ -475,15 +579,10 @@ impl App {
                             a.id = self.next_id;
                             self.next_id += 1;
                             a.page = page;
-                            let r = Rect {
-                                left: p.x,
-                                bottom: p.y,
-                                right: p.x + a.rect.width(),
-                                top: p.y + a.rect.height(),
-                            };
-                            a.move_to(r);
+                            a.move_to(signature_placement(&a,m,page,p,None));
                             add = Some(a);
                             self.tool = Tool::Select;
+                            self.status="Signature placed. Drag a corner to resize, or use Auto size. Save to keep it in this PDF.".into();
                         } else if matches!(self.tool, Tool::Note | Tool::Text) {
                             let (w, h) = if self.tool == Tool::Note {
                                 (22., 22.)
@@ -516,7 +615,13 @@ impl App {
                         && let Some(start) = self.drag_start.take()
                     {
                         let region = Rect::new(start, p);
-                        if editable
+                        if editable && self.tool==Tool::Signature && region.width()>2. && region.height()>2.
+                            && let Some(mut a)=self.placement.clone() {
+                            a.id=self.next_id;self.next_id+=1;a.page=page;
+                            a.move_to(signature_placement(&a,m,page,p,Some(start)));
+                            add=Some(a);self.tool=Tool::Select;
+                            self.status="Signature fitted to your box. Drag a corner to adjust; Save when finished.".into();
+                        } else if editable
                             && self.tool == Tool::Select
                             && let Some(selected) = t.selected
                             && let Some(a) = m.edits.annotations.iter().find(|a| a.id == selected)
@@ -524,12 +629,10 @@ impl App {
                             let dx = p.x - start.x;
                             let dy = p.y - start.y;
                             let mut moved = a.clone();
-                            moved.move_to(Rect {
-                                left: a.rect.left + dx,
-                                right: a.rect.right + dx,
-                                bottom: a.rect.bottom + dy,
-                                top: a.rect.top + dy,
-                            });
+                            moved.move_to(signature_layout::within(Rect {
+                                left: a.rect.left + dx, right: a.rect.right + dx,
+                                bottom: a.rect.bottom + dy, top: a.rect.top + dy,
+                            },g.crop));
                             move_annotation = Some(moved);
                         } else if editable && region.width() > 1. && region.height() > 1. {
                             let kind = match self.tool {
@@ -601,12 +704,11 @@ impl App {
                     if self.tool == Tool::Signature
                         && let Some(mut a) = self.placement.clone()
                     {
-                        a.move_to(Rect {
-                            left: p.x,
-                            bottom: p.y,
-                            right: p.x + a.rect.width(),
-                            top: p.y + a.rect.height(),
-                        });
+                        let start=if response.dragged(){self.drag_start}else{None};
+                        a.move_to(signature_placement(&a,m,page,p,start));
+                        if let Some(start)=start {
+                            ui.painter().rect_stroke(screen_rect(g,Rect::new(start,p),rotation,rect.min,zoom),0.,Stroke::new(1.,Color32::from_rgb(30,110,230)),StrokeKind::Inside);
+                        }
                         paint_annotation(ui, &a, g, rotation, rect.min, zoom);
                     }
                 }
@@ -771,7 +873,7 @@ fn field_widget(
     }
 }
 
-fn paint_annotation(
+pub(super) fn paint_annotation(
     ui: &egui::Ui,
     a: &Annotation,
     g: PageGeometry,
@@ -859,7 +961,7 @@ fn paint_annotation(
         }
         AnnotationKind::Image => {
             if let Some(bytes) = &a.image {
-                let id = egui::Id::new(("signature-image", a.id, bytes.len()));
+                let id = ui.id().with(("signature-image", a.id, bytes.len()));
                 let texture = ui.ctx().data_mut(|d| d.get_temp::<TextureHandle>(id));
                 let texture = texture.or_else(|| {
                     let im = image::load_from_memory(bytes).ok()?.to_rgba8();
@@ -875,14 +977,82 @@ fn paint_annotation(
                     Some(texture)
                 });
                 if let Some(texture) = texture {
-                    painter.image(
-                        texture.id(),
-                        r,
-                        egui::Rect::from_min_max(Pos2::ZERO, egui::pos2(1., 1.)),
-                        Color32::WHITE,
-                    );
+                    // Map the image corners through the same PDF rotation as ink and handles.
+                    let mut mesh = egui::Mesh::with_texture(texture.id());
+                    for (point, uv) in [
+                        (
+                            Point {
+                                x: a.rect.left,
+                                y: a.rect.top,
+                            },
+                            egui::pos2(0., 0.),
+                        ),
+                        (
+                            Point {
+                                x: a.rect.right,
+                                y: a.rect.top,
+                            },
+                            egui::pos2(1., 0.),
+                        ),
+                        (
+                            Point {
+                                x: a.rect.right,
+                                y: a.rect.bottom,
+                            },
+                            egui::pos2(1., 1.),
+                        ),
+                        (
+                            Point {
+                                x: a.rect.left,
+                                y: a.rect.bottom,
+                            },
+                            egui::pos2(0., 1.),
+                        ),
+                    ] {
+                        mesh.vertices.push(egui::epaint::Vertex {
+                            pos: screen(g, point, rotation, origin, zoom),
+                            uv,
+                            color: Color32::WHITE,
+                        });
+                    }
+                    mesh.indices.extend_from_slice(&[0, 1, 2, 0, 2, 3]);
+                    painter.add(egui::Shape::mesh(mesh));
                 }
             }
         }
     }
+}
+
+fn signature_placement(
+    a: &Annotation,
+    model: &DocumentModel,
+    page: usize,
+    pointer: Point,
+    start: Option<Point>,
+) -> Rect {
+    let crop = model.pages[page].crop;
+    if let Some(start) = start {
+        let region = Rect::new(start, pointer);
+        if region.width() > 2. && region.height() > 2. {
+            return signature_layout::within(signature_layout::fit_in(a.rect, region), crop);
+        }
+    }
+    // Visual fit only: this does not fill or cryptographically sign the widget.
+    if let Some(field) = model.fields.iter().find(|f| {
+        f.page == page
+            && !f.readonly
+            && matches!(f.kind, FieldKind::Signature)
+            && f.rect.contains(pointer)
+            && f.rect.width() > 12.
+            && f.rect.height() > 12.
+    }) {
+        let target = Rect {
+            left: field.rect.left + 3.,
+            right: field.rect.right - 3.,
+            bottom: field.rect.bottom + 3.,
+            top: field.rect.top - 3.,
+        };
+        return signature_layout::within(signature_layout::fit_in(a.rect, target), crop);
+    }
+    signature_layout::auto_size(a.rect, pointer, crop)
 }

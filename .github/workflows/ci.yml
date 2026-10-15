@@ -87,6 +87,11 @@ jobs:
         env:
           OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
         run: xvfb-run -a -s '-screen 0 1440x1000x24' dbus-run-session -- scripts/gui_acceptance.sh
+      - name: Signature placement and resize GUI regression
+        if: runner.os == 'Linux'
+        env:
+          OPENPDF_PDFIUM: ${{ github.workspace }}/${{ matrix.library }}
+        run: xvfb-run -a -s '-screen 0 1440x1000x24' dbus-run-session -- scripts/gui_signature_acceptance.sh
       - name: Dependency notices
         run: python3 scripts/third_party.py
       - name: Package
@@ -109,6 +114,7 @@ jobs:
             fixtures/internal-validation.json
             docs/evidence/gui-ci-*
             docs/evidence/gui-clipboard.txt
+            docs/evidence/signature-ux/
           if-no-files-found: error
   audit:
     runs-on: ubuntu-24.04

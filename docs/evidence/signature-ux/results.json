@@ -1,0 +1,26 @@
+{
+  "automatic_points": [
+    152.99999999999994,
+    35.420040000000085
+  ],
+  "resized_points": [
+    88.42860000000002,
+    20.471560000000068
+  ],
+  "drag_fitted_points": [
+    120.11773,
+    27.807680000000005
+  ],
+  "checks": [
+    "typed placement",
+    "remember and reuse",
+    "corner resize",
+    "single-step undo",
+    "redo",
+    "auto size",
+    "drag to fit",
+    "drawn ink",
+    "PDF save and qpdf structure"
+  ],
+  "certificate_dialog": "visually inspected; this test does not submit certificate signing"
+}

@@ -16,6 +16,7 @@ use std::{
 mod canvas;
 mod dialogs;
 mod signature_appearance;
+mod signature_layout;
 mod validation;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -56,6 +57,7 @@ struct Tab {
     matches: Vec<(usize, Rect)>,
     match_index: usize,
     selected: Option<u64>,
+    resizing: Option<(Annotation, Point)>,
     selection: Vec<(usize, Rect, String)>,
     signature_report: String,
     busy: bool,
@@ -139,11 +141,13 @@ struct App {
     signature_dialog: bool,
     sign_dialog: bool,
     signature_strokes: Vec<Vec<Point>>,
-    signature_drawing: bool,
     signature_mode: usize,
     signature_style: usize,
     signature_name: String,
     signature_image: Option<Vec<u8>>,
+    signature_image_aspect: f32,
+    remember_signature: bool,
+    saved_signatures: Option<Vec<(PathBuf, Annotation)>>,
     placement: Option<Annotation>,
     identity_name: String,
     identity_email: String,
@@ -224,11 +228,13 @@ impl App {
             signature_dialog: false,
             sign_dialog: false,
             signature_strokes: vec![],
-            signature_drawing: false,
             signature_mode: 0,
             signature_style: 0,
             signature_name: String::new(),
             signature_image: None,
+            signature_image_aspect: 1. / 3.,
+            remember_signature: false,
+            saved_signatures: None,
             placement: None,
             identity_name: String::new(),
             identity_email: String::new(),
@@ -282,6 +288,7 @@ impl App {
             matches: vec![],
             match_index: 0,
             selected: None,
+            resizing: None,
             selection: vec![],
             signature_report: String::new(),
             busy: true,
@@ -462,7 +469,6 @@ impl App {
                                 glyphs: r.glyphs,
                             },
                         );
-                        self.status = format!("Page rendered in {} ms", r.milliseconds);
                     }
                 }
                 Event::Matches {
@@ -585,6 +591,18 @@ impl App {
         }
     }
     fn shortcut(&mut self, ctx: &egui::Context) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            self.signature_dialog = false;
+            self.sign_dialog = false;
+            self.tool = Tool::Select;
+            self.placement = None;
+            self.drag_start = None;
+            if let Some(t) = self.tabs.get_mut(self.active) {
+                t.resizing = None;
+                t.selected = None;
+            }
+            self.status = "Ready".into();
+        }
         if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::O)) {
             self.open_dialog(ctx);
         }
@@ -606,9 +624,11 @@ impl App {
             && let Some(m) = &mut t.model
         {
             if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::Z)) {
+                t.resizing = None;
                 m.undo();
             }
             if ctx.input_mut(|i| i.consume_key(egui::Modifiers::COMMAND, egui::Key::Y)) {
+                t.resizing = None;
                 m.redo();
             }
             if !ctx.egui_wants_keyboard_input() {
@@ -686,12 +706,14 @@ if ui.button("Rotate").clicked(){t.rotation=(t.rotation+90)%360;}ui.checkbox(&mu
                 let editable=m.editable()&&!t.busy;
                 ui.horizontal_wrapped(|ui|{
                     ui.selectable_value(&mut self.tool,Tool::Select,"Select");ui.selectable_value(&mut self.tool,Tool::Hand,"Hand");
-                    ui.add_enabled_ui(editable,|ui|{for (tool,label) in [(Tool::Highlight,"Highlight"),(Tool::Underline,"Underline"),(Tool::StrikeOut,"Strike"),(Tool::Ink,"Ink"),(Tool::Note,"Comment"),(Tool::Text,"Text"),(Tool::Rectangle,"Rectangle"),(Tool::Ellipse,"Ellipse"),(Tool::Line,"Line")]{ui.selectable_value(&mut self.tool,tool,label);}
-if ui.button("Fill & Sign…").clicked(){self.signature_dialog=true;}});
-                    if ui.add_enabled(!t.busy&&!m.encrypted&&!m.restricted&&!m.xfa,egui::Button::new("Digitally sign…")).clicked(){self.identity_info=LocalIdentityStore::new(self.profile.join("identity")).info().unwrap_or_else(|e|{self.error=Some(e.to_string());None});self.sign_dialog=true;}
+                    ui.add_enabled_ui(editable,|ui|{for (tool,label) in [(Tool::Highlight,"Highlight"),(Tool::Note,"Comment"),(Tool::Text,"Text")]{ui.selectable_value(&mut self.tool,tool,label);}
+ui.menu_button("More tools",|ui|{for(tool,label)in[(Tool::Underline,"Underline"),(Tool::StrikeOut,"Strikethrough"),(Tool::Ink,"Freehand drawing"),(Tool::Rectangle,"Rectangle"),(Tool::Ellipse,"Ellipse"),(Tool::Line,"Line")]{if ui.selectable_value(&mut self.tool,tool,label).clicked(){ui.close();}}});
+if ui.button("Add signature…").on_hover_text("Draw, type or import your handwriting, then place it on the PDF").clicked(){self.signature_dialog=true;self.saved_signatures=None;}});
+                    if ui.add_enabled(!t.busy&&!m.encrypted&&!m.restricted&&!m.xfa,egui::Button::new("Sign with certificate…")).clicked(){self.identity_info=LocalIdentityStore::new(self.profile.join("identity")).info().unwrap_or_else(|e|{self.error=Some(e.to_string());None});self.sign_dialog=true;}
                 });
                 if !editable{ui.label(egui::RichText::new("Protected document: ordinary edits are disabled to preserve its contents and signatures.").color(Color32::from_rgb(170,110,20)));}
             }
+            self.signature_controls(ui);
             if self.search_open && !self.tabs.is_empty(){let t=&mut self.tabs[self.active];let mut search=false;ui.horizontal(|ui|{let r=ui.add(egui::TextEdit::singleline(&mut t.query).hint_text("Search document…"));if r.changed(){search=true;}ui.label(format!("{} results{}",t.matches.len(),if t.searching{" · searching…"}else{""}));if !t.matches.is_empty(){if ui.button("Previous").clicked(){t.match_index=(t.match_index+t.matches.len()-1)%t.matches.len();t.jump=Some(t.matches[t.match_index].0);}
 if ui.button("Next").clicked(){t.match_index=(t.match_index+1)%t.matches.len();t.jump=Some(t.matches[t.match_index].0);}}});if search{self.start_search();}}
         });
@@ -702,10 +724,17 @@ if ui.button("Next").clicked(){t.match_index=(t.match_index+1)%t.matches.len();t
                 }
                 ui.label(&self.status);
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.weak(format!(
-                        "Cache: {} MiB",
-                        self.cache.values().map(|c| c.bytes).sum::<usize>() / 1024 / 1024
-                    ));
+                    if let Some(t) = self.tabs.get(self.active)
+                        && let Some(m) = &t.model
+                    {
+                        ui.weak(if t.busy {
+                            "Working…"
+                        } else if m.dirty() {
+                            "Unsaved changes"
+                        } else {
+                            "No unsaved changes"
+                        });
+                    }
                 });
             });
         });

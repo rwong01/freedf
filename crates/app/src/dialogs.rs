@@ -65,116 +65,291 @@ impl App {
         }
     }
     fn visual_signature_dialog(&mut self, ctx: &egui::Context) {
-        let mut open = true;
-        egui::Window::new("Create a visual signature").open(&mut open).default_width(600.).show(ctx,|ui|{
-            ui.label("A visual signature is an appearance. Use Digitally sign for cryptographic document integrity.");
-            ui.horizontal(|ui|{ui.selectable_value(&mut self.signature_mode,0,"Draw");ui.selectable_value(&mut self.signature_mode,1,"Type");ui.selectable_value(&mut self.signature_mode,2,"Import image");ui.selectable_value(&mut self.signature_mode,3,"Saved appearances");});
-            match self.signature_mode{
-                0=>{let(rect,response)=ui.allocate_exact_size(egui::vec2(540.,180.),egui::Sense::drag());ui.painter().rect_filled(rect,4.,Color32::WHITE);ui.painter().line_segment([rect.left_bottom()-egui::vec2(0.,30.),rect.right_bottom()-egui::vec2(0.,30.)],egui::Stroke::new(1.,Color32::LIGHT_GRAY));
-                    if response.drag_started(){self.signature_strokes.push(vec![]);self.signature_drawing=true;}
-                    if response.dragged()&&let Some(p)=response.interact_pointer_pos()&&let Some(stroke)=self.signature_strokes.last_mut(){stroke.push(Point{x:(p.x-rect.left()).clamp(0.,540.),y:(180.-(p.y-rect.top())).clamp(0.,180.)});}
-                    if response.drag_stopped(){self.signature_drawing=false;}
-                    for stroke in&self.signature_strokes{for pair in stroke.windows(2){ui.painter().line_segment([rect.left_top()+egui::vec2(pair[0].x,180.-pair[0].y),rect.left_top()+egui::vec2(pair[1].x,180.-pair[1].y)],egui::Stroke::new(2.,Color32::from_rgb(20,50,110)));}}
-                    if ui.button("Clear drawing").clicked(){self.signature_strokes.clear();}
+        if self.signature_mode == 3 && self.saved_signatures.is_none() {
+            let mut saved = vec![];
+            let mut total = 0;
+            if let Ok(files) = std::fs::read_dir(self.profile.join("appearances")) {
+                for file in files.flatten() {
+                    let path = file.path();
+                    if path.extension().is_none_or(|e| e != "json") {
+                        continue;
+                    }
+                    let size = file.metadata().map(|m| m.len()).unwrap_or(u64::MAX);
+                    if size > 96 * 1024 * 1024 || total + size > 96 * 1024 * 1024 {
+                        continue;
+                    }
+                    if let Ok(bytes) = std::fs::read(&path)
+                        && let Ok(mut a) = serde_json::from_slice::<Annotation>(&bytes)
+                    {
+                        a.signature = true;
+                        total += size;
+                        saved.push((path, a));
+                    }
                 }
-                1=>{ui.label("Name or initials");ui.text_edit_singleline(&mut self.signature_name);ui.horizontal(|ui|{ui.selectable_value(&mut self.signature_style,0,"Caveat");ui.selectable_value(&mut self.signature_style,1,"Dancing Script");});let family=if self.signature_style==0{"Caveat"}else{"Dancing Script"};ui.label(egui::RichText::new(&self.signature_name).font(egui::FontId::new(36.,egui::FontFamily::Name(family.into()))));ui.weak("Bundled handwritten fonts · SIL Open Font License");}
-                2=>{if ui.button("Choose PNG or JPEG…").clicked()&& let Some(path)=rfd::FileDialog::new().add_filter("Signature images",&["png","jpg","jpeg"]).pick_file(){match std::fs::read(path){Ok(bytes)if bytes.len()<=20*1024*1024=>{
-                    let result=(||->anyhow::Result<_>{let mut reader=image::ImageReader::new(std::io::Cursor::new(&bytes)).with_guessed_format()?;let mut limits=image::Limits::default();limits.max_image_width=Some(4096);limits.max_image_height=Some(4096);limits.max_alloc=Some(80*1024*1024);reader.limits(limits);let im=reader.decode()?;anyhow::ensure!(im.width()>0&&im.height()>0,"Empty image");Ok(())})();match result{Ok(())=>self.signature_image=Some(bytes),Err(e)=>self.error=Some(e.to_string())}
-                },Ok(_)=>self.error=Some("Signature image exceeds 20 MiB".into()),Err(e)=>self.error=Some(e.to_string())}}
-if self.signature_image.is_some(){ui.label("Image loaded. Transparency is preserved.");}ui.weak("Crop and background removal are not yet supported.");}
-                _=>{let dir=self.profile.join("appearances");if let Ok(files)=std::fs::read_dir(&dir){for file in files.flatten(){if file.path().extension().is_some_and(|e|e=="json")&&let Ok(bytes)=std::fs::read(file.path())&&let Ok(a)=serde_json::from_slice::<Annotation>(&bytes){ui.horizontal(|ui|{if ui.button(file.file_name().to_string_lossy()).clicked(){self.placement=Some(a);self.tool=Tool::Signature;self.signature_dialog=false;}
-if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.path()){self.error=Some(e.to_string());}});}}}else{ui.label("No saved appearances.");}}
             }
-            if self.signature_mode<3 {
-                ui.separator();ui.label("Click Place, then click the page. Use Select to move it; resize in Comments.");
-                let ready=match self.signature_mode{0=>self.signature_strokes.iter().any(|s|s.len()>1),1=>!self.signature_name.trim().is_empty(),_=>self.signature_image.is_some()};
-                ui.horizontal(|ui|{
-                    if ui.add_enabled(ready,egui::Button::new("Place signature")).clicked(){self.placement=self.make_appearance();self.tool=Tool::Signature;self.signature_dialog=false;}
-                    if ui.add_enabled(ready,egui::Button::new("Save reusable appearance locally")).clicked()&& let Some(a)=self.make_appearance(){let dir=self.profile.join("appearances");let result=(||->anyhow::Result<()>{std::fs::create_dir_all(&dir)?;#[cfg(unix)]{use std::os::unix::fs::PermissionsExt;std::fs::set_permissions(&dir,std::fs::Permissions::from_mode(0o700))?;}let mut tmp=tempfile::NamedTempFile::new_in(&dir)?;tmp.write_all(&serde_json::to_vec(&a)?)?;tmp.as_file().sync_all()?;let name=format!("signature-{}.json",std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH)?.as_millis());tmp.persist_noclobber(dir.join(name)).map_err(|e|e.error)?;Ok(())})();match result{Ok(())=>self.status="Signature appearance saved locally".into(),Err(e)=>self.error=Some(e.to_string())}}
+            saved.sort_by(|a, b| a.0.cmp(&b.0));
+            self.saved_signatures = Some(saved);
+        }
+        let mut open = true;
+        egui::Window::new("Add your signature")
+            .open(&mut open).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_CENTER,[0.,0.])
+            .default_width(580.).show(ctx, |ui| {
+                ui.label("Put your handwritten signature or initials on this PDF.");
+                ui.weak("You can move or resize it before saving the document.");
+                ui.add_space(6.);
+                ui.horizontal(|ui| {
+                    for (i, label) in ["Draw", "Type", "Import image", "Saved signatures"].iter().enumerate() {
+                        ui.selectable_value(&mut self.signature_mode, i, *label);
+                    }
                 });
-            }
-        });
+                ui.separator();
+                match self.signature_mode {
+                    0 => {
+                        ui.label("Draw below with your mouse or pen.");
+                        let (rect, response) = ui.allocate_exact_size(egui::vec2(540.,180.), egui::Sense::drag());
+                        ui.painter().rect_filled(rect, 4., Color32::WHITE);
+                        ui.painter().line_segment([rect.left_bottom()-egui::vec2(0.,30.),rect.right_bottom()-egui::vec2(0.,30.)], egui::Stroke::new(1.,Color32::LIGHT_GRAY));
+                        if response.drag_started() { self.signature_strokes.push(vec![]); }
+                        if response.dragged() && let Some(p) = response.interact_pointer_pos()
+                            && let Some(stroke) = self.signature_strokes.last_mut() {
+                            stroke.push(Point{x:(p.x-rect.left()).clamp(0.,540.),y:(180.-(p.y-rect.top())).clamp(0.,180.)});
+                        }
+                        for stroke in &self.signature_strokes {
+                            for pair in stroke.windows(2) {
+                                ui.painter().line_segment([rect.left_top()+egui::vec2(pair[0].x,180.-pair[0].y),rect.left_top()+egui::vec2(pair[1].x,180.-pair[1].y)],egui::Stroke::new(2.,Color32::from_rgb(20,50,110)));
+                            }
+                        }
+                        if ui.button("Clear drawing").clicked() { self.signature_strokes.clear(); }
+                    }
+                    1 => {
+                        ui.label("Your name or initials");
+                        ui.add(egui::TextEdit::singleline(&mut self.signature_name).hint_text("e.g. Alex Morgan").desired_width(400.));
+                        ui.horizontal(|ui| {
+                            ui.selectable_value(&mut self.signature_style,0,"Simple");
+                            ui.selectable_value(&mut self.signature_style,1,"Flowing");
+                        });
+                        let family = if self.signature_style==0 { "Caveat" } else { "Dancing Script" };
+                        egui::Frame::new().fill(Color32::WHITE).inner_margin(16.).show(ui, |ui| {
+                            ui.set_min_size(egui::vec2(500.,65.));
+                            ui.label(egui::RichText::new(&self.signature_name).color(Color32::from_rgb(20,46,102)).font(egui::FontId::new(40.,egui::FontFamily::Name(family.into()))));
+                        });
+                    }
+                    2 => {
+                        if ui.button("Choose signature image…").clicked()
+                            && let Some(path)=rfd::FileDialog::new().add_filter("Signature images",&["png","jpg","jpeg"]).pick_file() {
+                            match std::fs::metadata(&path).and_then(|m| {
+                                if m.len()>20*1024*1024 { return Err(std::io::Error::other("Signature image exceeds 20 MiB")); }
+                                std::fs::read(path)
+                            }).map_err(anyhow::Error::from).and_then(|b| signature_appearance::imported(&b)) {
+                                Ok((bytes,aspect)) => {self.signature_image=Some(bytes);self.signature_image_aspect=aspect;},
+                                Err(e) => self.error=Some(e.to_string()),
+                            }
+                        }
+                        if self.signature_image.is_some() && let Some(a)=self.make_appearance() {
+                            signature_preview(ui, &a);
+                        }
+                        ui.weak("PNG or JPEG. Transparent margins are trimmed; proportions stay intact.");
+                    }
+                    _ => {
+                        let mut choose = None;
+                        let mut delete = None;
+                        if let Some(saved) = &self.saved_signatures {
+                            if saved.is_empty() { ui.label("No saved signatures yet. Create one and check Remember for next time."); }
+                            egui::ScrollArea::vertical().max_height(300.).show(ui, |ui| {
+                                for (path, a) in saved {
+                                    ui.push_id(path, |ui| {
+                                        signature_preview(ui, a);
+                                        ui.horizontal(|ui| {
+                                            let label = if a.text.is_empty() { "Saved signature" } else { &a.text };
+                                            ui.label(label);
+                                            if ui.button("Use this signature").clicked() { choose=Some(a.clone()); }
+                                            if ui.small_button("Delete saved copy").clicked() { delete=Some(path.clone()); }
+                                        });
+                                        ui.separator();
+                                    });
+                                }
+                            });
+                        }
+                        if let Some(path)=delete {
+                            match std::fs::remove_file(path) {
+                                Ok(()) => self.saved_signatures=None,
+                                Err(e) => self.error=Some(e.to_string()),
+                            }
+                        }
+                        if let Some(a)=choose { self.start_signature_placement(a); }
+                    }
+                }
+                if self.signature_mode<3 {
+                    ui.separator();
+                    ui.checkbox(&mut self.remember_signature,"Remember for next time on this device");
+                    ui.weak("Keeps a reusable copy of your handwriting. Save the PDF to keep it in this document.");
+                    ui.add_space(6.);
+                    ui.label("Click the page for automatic sizing, or drag a box to fit a specific space.");
+                    let ready=match self.signature_mode {
+                        0=>self.signature_strokes.iter().any(|s|s.len()>1),
+                        1=>!self.signature_name.trim().is_empty(),
+                        _=>self.signature_image.is_some(),
+                    };
+                    ui.horizontal(|ui| {
+                        if ui.add_enabled(ready,egui::Button::new(egui::RichText::new("Place on document").color(Color32::WHITE)).fill(Color32::from_rgb(45,105,200))).clicked()
+                            && let Some(a)=self.make_appearance() {
+                            let result=if self.remember_signature {self.remember_appearance(&a)} else {Ok(())};
+                            match result {
+                                Ok(())=>self.start_signature_placement(a),
+                                Err(e)=>self.error=Some(e.to_string()),
+                            }
+                        }
+                        if ui.button("Cancel").clicked() { self.signature_dialog=false; }
+                    });
+                }
+                ui.separator();
+                ui.collapsing("Need a certificate-backed digital signature?", |ui| {
+                    ui.label("A certificate signature also lets readers check whether the PDF changed after you signed it. It uses a private signing identity stored on this device.");
+                    ui.label("Finish placing your handwriting, then choose Sign with certificate in the toolbar. Saving your handwriting for reuse does not create a certificate signature.");
+                });
+            });
         if !open {
             self.signature_dialog = false;
         }
     }
-    fn make_appearance(&mut self) -> Option<Annotation> {
-        if self.signature_mode == 1 {
-            return match signature_appearance::typed(&self.signature_name, self.signature_style) {
-                Ok((bytes, aspect)) => {
-                    let mut a = Annotation::new(
-                        0,
-                        0,
-                        AnnotationKind::Image,
-                        Rect {
-                            left: 0.,
-                            bottom: 0.,
-                            right: 270.,
-                            top: 270. * aspect,
-                        },
-                    );
-                    a.image = Some(bytes);
-                    Some(a)
-                }
-                Err(e) => {
-                    self.error = Some(e.to_string());
-                    None
-                }
-            };
+
+    fn start_signature_placement(&mut self, mut a: Annotation) {
+        a.signature = true;
+        self.placement = Some(a);
+        self.tool = Tool::Signature;
+        self.signature_dialog = false;
+        self.drag_start = None;
+        if let Some(t) = self.tabs.get_mut(self.active) {
+            t.selected = None;
+            t.resizing = None;
         }
-        let kind = match self.signature_mode {
-            0 => AnnotationKind::Ink,
-            1 => AnnotationKind::FreeText,
-            2 => AnnotationKind::Image,
-            _ => return None,
-        };
+        self.status = "Click to place your signature, or drag a box to fit. Esc cancels.".into();
+    }
+
+    fn remember_appearance(&mut self, a: &Annotation) -> anyhow::Result<()> {
+        let dir = self.profile.join("appearances");
+        std::fs::create_dir_all(&dir)?;
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            std::fs::set_permissions(&dir, std::fs::Permissions::from_mode(0o700))?;
+        }
+        let mut tmp = tempfile::NamedTempFile::new_in(&dir)?;
+        tmp.write_all(&serde_json::to_vec(a)?)?;
+        tmp.as_file().sync_all()?;
+        let name = format!(
+            "signature-{}.json",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)?
+                .as_nanos()
+        );
+        tmp.persist_noclobber(dir.join(name)).map_err(|e| e.error)?;
+        self.saved_signatures = None;
+        Ok(())
+    }
+
+    fn make_appearance(&mut self) -> Option<Annotation> {
         let mut a = Annotation::new(
             0,
             0,
-            kind,
+            AnnotationKind::Ink,
             Rect {
                 left: 0.,
                 bottom: 0.,
-                right: 270.,
-                top: 90.,
+                right: 180.,
+                top: 54.,
             },
         );
+        a.signature = true;
         a.color = [0.08, 0.18, 0.4];
-        match kind {
-            AnnotationKind::Ink => {
-                a.strokes = self
-                    .signature_strokes
-                    .iter()
-                    .map(|s| {
-                        s.iter()
-                            .map(|p| Point {
-                                x: p.x / 2.,
-                                y: p.y / 2.,
-                            })
-                            .collect()
-                    })
-                    .collect();
-                a.width = 1.5;
+        a.width = 1.5;
+        if self.signature_mode == 0 {
+            a.strokes = self
+                .signature_strokes
+                .iter()
+                .filter(|s| s.len() > 1)
+                .cloned()
+                .collect();
+            let mut points = a.strokes.iter().flatten();
+            let first = *points.next()?;
+            let mut r = Rect {
+                left: first.x,
+                bottom: first.y,
+                right: first.x,
+                top: first.y,
+            };
+            for p in points {
+                r.left = r.left.min(p.x);
+                r.right = r.right.max(p.x);
+                r.bottom = r.bottom.min(p.y);
+                r.top = r.top.max(p.y);
             }
-            AnnotationKind::FreeText => {
-                a.text = self.signature_name.clone();
-                a.rect.top = 45.;
+            r.left -= 3.;
+            r.right += 3.;
+            r.bottom -= 3.;
+            r.top += 3.;
+            a.rect = r;
+            a.move_to(signature_layout::fit_in(
+                r,
+                Rect {
+                    left: 0.,
+                    bottom: 0.,
+                    right: 180.,
+                    top: 54.,
+                },
+            ));
+        } else {
+            let result = if self.signature_mode == 1 {
+                signature_appearance::typed(&self.signature_name, self.signature_style)
+            } else {
+                Ok((self.signature_image.clone()?, self.signature_image_aspect))
+            };
+            match result {
+                Ok((bytes, aspect)) => {
+                    a.kind = AnnotationKind::Image;
+                    a.rect.top = 180. * aspect;
+                    a.image = Some(bytes);
+                    if self.signature_mode == 1 {
+                        a.text = self.signature_name.trim().into();
+                    }
+                }
+                Err(e) => {
+                    self.error = Some(e.to_string());
+                    return None;
+                }
             }
-            AnnotationKind::Image => {
-                a.image = self.signature_image.clone();
-            }
-            _ => {}
         }
         Some(a)
     }
     fn digital_signature_dialog(&mut self, ctx: &egui::Context) {
         let mut open = true;
         let mut sign = false;
-        egui::Window::new("Digitally sign & save a copy").open(&mut open).default_width(560.).show(ctx,|ui|{
-            ui.label("This signs the complete saved PDF with your local identity. It detects changes to signed bytes. A self-signed identity does not independently prove your legal identity.");
-            if let Some(info)=&self.identity_info{ui.label(format!("Signing as {}",info.display_name));ui.label(format!("Certificate expires {}",info.expires));ui.monospace(&info.fingerprint);}else{ui.label("Create your private local identity once. Future signatures reuse it.");ui.label("Display name");ui.text_edit_singleline(&mut self.identity_name);ui.label("Email (optional)");ui.text_edit_singleline(&mut self.identity_email);ui.weak("Protected by your OS credential store. No password setup or online service is required. If secure storage is unavailable, signing will stop.");}
-            ui.separator();ui.label("Placement: select a visual signature or annotation to use its position. Otherwise a visible signature box is placed near the bottom of the current page.");ui.label("The output is a new file. The original remains available.");
-            if ui.add_enabled(self.identity_info.is_some()||!self.identity_name.trim().is_empty(),egui::Button::new("Sign & save copy…")).clicked(){sign=true;}
+        egui::Window::new("Sign with a certificate").open(&mut open).collapsible(false).anchor(egui::Align2::CENTER_CENTER,[0.,0.]).default_width(560.).show(ctx,|ui| {
+            ui.heading("Let readers check that this PDF has not changed");
+            ui.label("This adds a digital certificate signature and saves a new PDF copy, including your edits and any handwriting you placed.");
+            ui.label("Finish your edits first. The signed copy opens with editing disabled to protect its signature.");
+            ui.separator();
+            if let Some(info)=&self.identity_info {
+                ui.label(format!("Signing as {}",info.display_name));
+                ui.collapsing("Certificate details",|ui| {
+                    ui.label(format!("Expires {}",info.expires));
+                    ui.label("SHA-256 fingerprint");ui.monospace(&info.fingerprint);
+                });
+            } else {
+                ui.label("First time only: enter the name to show on your certificate.");
+                ui.label("Your name");ui.text_edit_singleline(&mut self.identity_name);
+                ui.label("Email (optional)");ui.text_edit_singleline(&mut self.identity_email);
+                ui.weak("Your computer protects the private signing key. OpenPDF reuses it next time. No account or password setup is required.");
+            }
+            ui.add_space(8.);
+            ui.label("This is a self-signed certificate: it detects document changes, but does not independently verify who you are.");
+            let handwriting=self.tabs.get(self.active).and_then(|t|t.model.as_ref()).is_some_and(|m|m.edits.annotations.iter().any(|a|a.signature||a.kind==AnnotationKind::Image));
+            ui.weak(if handwriting {"Your placed handwriting stays visible. Certificate information appears in Signature details; no extra stamp covers your handwriting."} else {"A certificate stamp will appear at the bottom of the current page. To add handwriting first, cancel and choose Add signature."});
+            ui.separator();
+            ui.horizontal(|ui| {
+                if ui.add_enabled(self.identity_info.is_some()||!self.identity_name.trim().is_empty(),egui::Button::new("Sign and save a copy…")).clicked(){sign=true;}
+                if ui.button("Cancel").clicked(){self.sign_dialog=false;}
+            });
         });
         if !open {
             self.sign_dialog = false;
@@ -203,27 +378,28 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
             return;
         }
         let g = model.pages[t.page];
-        let (page, rect) = t
-            .selected
-            .and_then(|id| model.edits.annotations.iter().find(|a| a.id == id))
-            .map(|a| (a.page, a.rect))
-            .unwrap_or((
-                t.page,
-                Rect {
-                    left: g.crop.left + 30.,
-                    bottom: g.crop.bottom + 30.,
-                    right: (g.crop.left + 300.).min(g.crop.right - 10.),
-                    top: g.crop.bottom + 100.,
-                },
-            ));
-        let appearance = openpdf_signatures::Appearance {
-            page,
+        let has_handwriting = model
+            .edits
+            .annotations
+            .iter()
+            .any(|a| a.signature || a.kind == AnnotationKind::Image);
+        let rect = signature_layout::within(
+            Rect {
+                left: g.crop.left + 30.,
+                bottom: g.crop.bottom + 30.,
+                right: g.crop.left + 270.,
+                top: g.crop.bottom + 85.,
+            },
+            g.crop,
+        );
+        let appearance = (!has_handwriting).then_some(openpdf_signatures::Appearance {
+            page: t.page,
             x: rect.left as f64,
             y: rect.bottom as f64,
             width: rect.width() as f64,
             height: rect.height() as f64,
             text: "Digitally signed with OpenPDF\nLocal self-signed identity".into(),
-        };
+        });
         let id = t.id;
         t.busy = true;
         let name = self.identity_name.clone();
@@ -241,7 +417,7 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
                     None => store.create(&name, &email)?,
                 };
                 let input = model.serialize()?;
-                let bytes = OfflineSigner.sign(&input, &identity, Some(appearance))?;
+                let bytes = OfflineSigner.sign(&input, &identity, appearance)?;
                 openpdf_persistence::save_pdf(&path, &bytes, None)?;
                 Ok(bytes)
             })();
@@ -369,4 +545,33 @@ if ui.small_button("Delete").clicked()&& let Err(e)=std::fs::remove_file(file.pa
             ctx.request_repaint();
         });
     }
+}
+
+fn signature_preview(ui: &mut egui::Ui, a: &Annotation) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(500., 90.), egui::Sense::hover());
+    ui.painter().rect_filled(rect, 4., Color32::WHITE);
+    let crop = Rect {
+        left: 0.,
+        bottom: 0.,
+        right: 500.,
+        top: 90.,
+    };
+    let mut preview = a.clone();
+    preview.move_to(signature_layout::fit_in(
+        a.rect,
+        Rect {
+            left: 12.,
+            bottom: 12.,
+            right: 488.,
+            top: 78.,
+        },
+    ));
+    canvas::paint_annotation(
+        ui,
+        &preview,
+        openpdf_document::PageGeometry { crop, rotation: 0 },
+        0,
+        rect.min,
+        1.,
+    );
 }

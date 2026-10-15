@@ -2,6 +2,10 @@ name: Windows Defender investigation
 on:
   workflow_dispatch:
     inputs:
+      native_run_id:
+        description: Build-and-verify run containing the native Windows package to scan
+        type: string
+        default: '38652821545'
       rebuild:
         description: Also compile a fresh native Windows release without build caches
         type: boolean
@@ -73,8 +77,10 @@ jobs:
         if: matrix.source == 'native-ci'
         env:
           GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN_ID: ${{ inputs.native_run_id }}
         run: |
-          gh run download 38652821545 --repo "$env:GITHUB_REPOSITORY" --name openpdf-windows-x64 --dir samples
+          if ($env:NATIVE_RUN_ID -notmatch '^\d+$') { throw 'Expected a numeric build run ID.' }
+          gh run download "$env:NATIVE_RUN_ID" --repo "$env:GITHUB_REPOSITORY" --name openpdf-windows-x64 --dir samples
           if ($LASTEXITCODE) { throw 'CI artifact download failed.' }
           ./scripts/defender_scan.ps1 -Path samples/dist/OpenPDF-Desktop-0.1.0-windows-x64.zip -ReportDirectory reports/archive
           Expand-Archive samples/dist/OpenPDF-Desktop-0.1.0-windows-x64.zip samples/extracted

@@ -18,17 +18,31 @@ characters produce a save error rather than disappearing. Existing form objects
 and unrelated annotations are preserved. XFA, encrypted and signed documents are
 readonly in the ordinary editor. View rotation does not change saved page rotation.
 
-Fill & Sign creates a visual signature by drawing, typing with a bundled
-handwritten font, or importing PNG/JPEG. Place it, then select it to move/resize.
-Explicitly save an appearance if you want to reuse it. Typed initials use the same
-workflow. Image cropping and background removal are not implemented.
+**Add signature** puts your handwriting on the PDF. Draw, type your name or
+initials, import a PNG/JPEG, or choose a preview in Saved signatures. The optional
+**Remember for next time on this device** checkbox keeps a reusable copy of the
+handwriting; it does not save the PDF or add a certificate.
 
-Digitally sign creates a separate signed copy. On first use, enter a display name
+Choose **Place on document**, then click for an automatic starting size. To fit a
+specific space, drag a box: the signature fits inside without stretching. Existing
+editable signature boxes also provide visual fitting targets; this does not fill
+their cryptographic signature field. Transparent image padding and unused drawing
+space are trimmed automatically. Opaque backgrounds are preserved.
+
+After placement, drag the signature to move it or drag a corner handle to resize.
+**Smaller**, **Larger**, **Auto size**, **Delete**, and **Done** appear directly in
+the toolbar. Proportions stay intact and placements stay within the page. Esc
+cancels placement; Ctrl+Z/Ctrl+Y undo/redo a completed resize or placement. Choose
+**Save** to keep it in the PDF. No certificate is required for this workflow.
+
+**Sign with certificate** creates a separate signed copy that lets readers check
+for changes to signed bytes. Finish editing first. On first use, enter a display name
 and optional email. The app generates and protects a local identity with your OS
 credential service and reuses it on later runs. If secure storage is unavailable,
-it stops instead of saving an unprotected key. Select an annotation/signature
-first to use its bounds; otherwise the app uses a visible box near the page bottom.
-Every operation requires Sign & save confirmation. Certificate identity is
+it stops instead of saving an unprotected key. Existing placed handwriting stays
+visible, with no additional certificate stamp covering it. If there is no placed
+handwriting, a certificate stamp appears near the current page's bottom.
+Every operation requires **Sign and save a copy** confirmation. Certificate identity is
 self-signed: integrity verification is not independent verification of a person.
 
 Save writes only after serialization succeeds. Save As chooses another path.

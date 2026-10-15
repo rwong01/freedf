@@ -48,8 +48,8 @@ means code exists but the complete acceptance workflow remains unverified.
 | Draw visual signature | Tested | Actual mouse drawing, placement, Save; Poppler independently renders native ink in gui-drawn-signature.pdf; resize workflow pending |
 | Type visual signature | Tested | Two OFL fonts; transparent image generation, PDF persistence and independent Poppler rendering |
 | Import signature image/transparency | Implemented | PNG/JPEG limits, alpha mask XObject; end-to-end pending |
-| Signature cropping/background cleanup | Not started | Accurately labeled in UI |
-| Signature placement/movement/resizing | Tested | GUI drawing, placement, inspector resize and canvas move saved; qpdf confirms referenced geometry and GUI undo restoration |
+| Signature cropping/background cleanup | In progress | Transparent image padding and unused drawing space automatically trimmed; manual crop and opaque background removal remain unsupported |
+| Signature placement/movement/resizing | Tested | Automatic initial size, drag-to-fit, proportional on-page corner handles, Smaller/Larger/Auto size controls; actual GUI save/undo/redo and qpdf geometry checks in evidence/signature-ux |
 | Saved reusable appearances/delete | Implemented | Explicit local save, private filesystem permissions; no default/rename UI yet |
 | Initials/date/checkmark shortcuts | In progress | Initials via type; generic text/ink work; date/checkmark shortcuts pending |
 | Flatten Copy | Not started | No misleading flatten button |

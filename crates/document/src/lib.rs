@@ -121,6 +121,9 @@ pub struct Annotation {
     pub quads: Vec<Rect>,
     /// PNG/JPEG bytes only. Never a path into someone else's document.
     pub image: Option<Vec<u8>>,
+    /// Editing affordance only; a handwritten appearance is not a certificate signature.
+    #[serde(default)]
+    pub signature: bool,
 }
 impl Annotation {
     pub fn new(id: u64, page: usize, kind: AnnotationKind, rect: Rect) -> Self {
@@ -136,6 +139,7 @@ impl Annotation {
             strokes: vec![],
             quads: vec![],
             image: None,
+            signature: false,
         }
     }
     pub fn line_points(&self) -> [Point; 2] {

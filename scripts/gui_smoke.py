@@ -20,7 +20,7 @@ if a.phase=='forms':
 elif a.phase=='search':
     click(432,50);click(120,185);type_text('Searchable');time.sleep(2)
 elif a.phase=='annotation':
-    click(580,155);run('mousemove',500,700,'mousedown',1);time.sleep(.15)
+    click(392,155);click(389,264);run('mousemove',500,700,'mousedown',1);time.sleep(.15)
     for x,y in [(530,710),(570,740),(620,770)]:run('mousemove',x,y);time.sleep(.1)
     run('mouseup',1);time.sleep(.3);key('ctrl+s');time.sleep(2)
 elif a.phase=='copy':
@@ -28,7 +28,7 @@ elif a.phase=='copy':
     for x,y in [(340,385),(430,390),(600,402)]:run('mousemove',x,y);time.sleep(.2)
     run('mouseup',1);time.sleep(.3);key('ctrl+c')
 elif a.phase=='draw':
-    click(788,155);time.sleep(.5)
+    click(500,155);time.sleep(.5)
 path=pathlib.Path(a.output);path.parent.mkdir(parents=True,exist_ok=True)
 subprocess.run([sc,'--overwrite',str(path)],check=True)
 print(f'GUI input phase {a.phase} executed; screenshot: {path}. Inspect screenshot and saved PDF before claiming acceptance.')
