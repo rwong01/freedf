@@ -10,6 +10,10 @@ report of `Trojan:Win32/Bearfoos.A!ml`. See DEFENDER_INVESTIGATION.md. Earlier b
 and functional test results are not antivirus clearance. Keep the quarantined
 artifact blocked while collecting independent scan/build evidence.
 
+Latest iteration: [signing UX update](SIGNING_UX_UPDATE.md), including the new
+native Windows ZIP, proportional canvas resizing, automatic placement sizing,
+plain-language signing controls, and additional GUI/Defender evidence.
+
 ## Implemented and exercised
 
 Six Rust workspace crates separate the desktop UI, PDF document/edit model,

@@ -1,0 +1,37 @@
+{
+  "startedUtc": "2026-10-15T03:33:11.6030998Z",
+  "path": "samples/extracted/windows-x64/pdfium.dll",
+  "expectedSha256": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118",
+  "outcome": "no-detection-in-this-scan",
+  "error": null,
+  "defender": {
+    "AMEngineVersion": "1.1.26090.9",
+    "AMProductVersion": "4.18.26090.9",
+    "AntivirusSignatureVersion": "1.461.32.0",
+    "AntivirusSignatureLastUpdated": "2026-10-14T21:16:48+00:00",
+    "AMServiceEnabled": true,
+    "AntivirusEnabled": true,
+    "RealTimeProtectionEnabled": true,
+    "AMRunningMode": "Normal"
+  },
+  "preferences": {
+    "MAPSReporting": 0,
+    "SubmitSamplesConsent": 2,
+    "DisableBlockAtFirstSeen": true,
+    "ExclusionPath": [
+      "C:\\",
+      "D:\\"
+    ],
+    "ExclusionProcess": null,
+    "ExclusionExtension": null
+  },
+  "sha256": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118",
+  "authenticode": {
+    "Status": 2,
+    "StatusMessage": "The file D:\\a\\freedf\\freedf\\samples\\extracted\\windows-x64\\pdfium.dll is not digitally signed. You cannot run this script on the current system. For more information about running scripts and setting execution policy, see about_Execution_Policies at https://go.microsoft.com/fwlink/?LinkID=135170"
+  },
+  "scanner": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26090.9-0\\MpCmdRun.exe",
+  "exitCode": 0,
+  "sha256After": "79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118",
+  "finishedUtc": "2026-10-15T03:33:11.8967502Z"
+}

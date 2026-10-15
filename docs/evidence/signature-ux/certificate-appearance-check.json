@@ -1,0 +1,7 @@
+{
+  "renderer": "Poppler pdftoppm",
+  "page": 3,
+  "width_or_height_limit": 1200,
+  "pixel_png_bytes_identical": true,
+  "sha256": "2b38eaa446f014dc2fb95b32388d7a48713a7aca4f364221506c086ae25abe0d"
+}

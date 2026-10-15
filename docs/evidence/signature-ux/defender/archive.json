@@ -1,0 +1,37 @@
+{
+  "startedUtc": "2026-10-15T03:32:57.4975772Z",
+  "path": "samples/dist/OpenPDF-Desktop-0.1.0-windows-x64.zip",
+  "expectedSha256": "",
+  "outcome": "no-detection-in-this-scan",
+  "error": null,
+  "defender": {
+    "AMEngineVersion": "1.1.26090.9",
+    "AMProductVersion": "4.18.26090.9",
+    "AntivirusSignatureVersion": "1.461.32.0",
+    "AntivirusSignatureLastUpdated": "2026-10-14T21:16:48+00:00",
+    "AMServiceEnabled": true,
+    "AntivirusEnabled": true,
+    "RealTimeProtectionEnabled": true,
+    "AMRunningMode": "Normal"
+  },
+  "preferences": {
+    "MAPSReporting": 0,
+    "SubmitSamplesConsent": 2,
+    "DisableBlockAtFirstSeen": true,
+    "ExclusionPath": [
+      "C:\\",
+      "D:\\"
+    ],
+    "ExclusionProcess": null,
+    "ExclusionExtension": null
+  },
+  "sha256": "ee41063bd1aad6251c948c43ede71df286f188f4a17346cc7eaabec5a5e14dd3",
+  "authenticode": {
+    "Status": 1,
+    "StatusMessage": "The form specified for the subject is not one supported or known by the specified trust provider."
+  },
+  "scanner": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26090.9-0\\MpCmdRun.exe",
+  "exitCode": 0,
+  "sha256After": "ee41063bd1aad6251c948c43ede71df286f188f4a17346cc7eaabec5a5e14dd3",
+  "finishedUtc": "2026-10-15T03:33:07.7973654Z"
+}

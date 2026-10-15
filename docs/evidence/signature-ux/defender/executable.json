@@ -1,0 +1,37 @@
+{
+  "startedUtc": "2026-10-15T03:33:10.9076509Z",
+  "path": "samples/extracted/windows-x64/openpdf.exe",
+  "expectedSha256": "",
+  "outcome": "no-detection-in-this-scan",
+  "error": null,
+  "defender": {
+    "AMEngineVersion": "1.1.26090.9",
+    "AMProductVersion": "4.18.26090.9",
+    "AntivirusSignatureVersion": "1.461.32.0",
+    "AntivirusSignatureLastUpdated": "2026-10-14T21:16:48+00:00",
+    "AMServiceEnabled": true,
+    "AntivirusEnabled": true,
+    "RealTimeProtectionEnabled": true,
+    "AMRunningMode": "Normal"
+  },
+  "preferences": {
+    "MAPSReporting": 0,
+    "SubmitSamplesConsent": 2,
+    "DisableBlockAtFirstSeen": true,
+    "ExclusionPath": [
+      "C:\\",
+      "D:\\"
+    ],
+    "ExclusionProcess": null,
+    "ExclusionExtension": null
+  },
+  "sha256": "c3cfbb9ff4d77e467e6423e35cb0562a117513f25a8a02ae1966f8fb568ecaac",
+  "authenticode": {
+    "Status": 2,
+    "StatusMessage": "The file D:\\a\\freedf\\freedf\\samples\\extracted\\windows-x64\\openpdf.exe is not digitally signed. You cannot run this script on the current system. For more information about running scripts and setting execution policy, see about_Execution_Policies at https://go.microsoft.com/fwlink/?LinkID=135170"
+  },
+  "scanner": "C:\\ProgramData\\Microsoft\\Windows Defender\\Platform\\4.18.26090.9-0\\MpCmdRun.exe",
+  "exitCode": 0,
+  "sha256After": "c3cfbb9ff4d77e467e6423e35cb0562a117513f25a8a02ae1966f8fb568ecaac",
+  "finishedUtc": "2026-10-15T03:33:11.6002052Z"
+}
