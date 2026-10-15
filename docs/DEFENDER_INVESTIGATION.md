@@ -85,6 +85,22 @@ which GitHub documents as requiring only contents:read, and verifies the pinned
 hash. If GitHub also denies this request, the original scan remains blocked;
 no elevated token or publication is used. All jobs retain read-only permissions.
 
+Run `38664958718` confirmed the asset-by-ID request is also denied (`HTTP 403:
+Resource not accessible by integration`). The original-package scan remains
+blocked by draft-asset access. No privilege escalation was deployed. The fresh
+native build in this run passed Defender preparation and began compiling; its
+eventual build/scan result must be checked before making further claims.
+
+For isolated testing, the previously scanned native artifact was downloaded to
+`dist/OpenPDF-Desktop-0.1.0-windows-x64-native-investigation.zip`. Its ZIP and EXE
+hashes were checked against the reports above. Adjacent
+`dist/windows-native-investigation-scan.json` records provenance and limitations.
+This is a separate copy of the existing native CI artifact, not a relabeled or
+modified copy of the flagged cross-build. It has not been recommended for use
+with personal documents or production signing identities. Keep Defender enabled
+in a disposable Windows VM and investigate any further detection; do not add an
+exclusion. The unresolved distributed Windows package remains under investigation.
+
 References:
 - https://learn.microsoft.com/en-us/defender-endpoint/command-line-arguments-microsoft-defender-antivirus
 - https://www.microsoft.com/en-us/wdsi/threats/malware-encyclopedia-description?name=Trojan%3AWin32%2FBearfoos.A%21ml
