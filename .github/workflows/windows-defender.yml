@@ -1,0 +1,84 @@
+name: Windows Defender investigation
+on:
+  workflow_dispatch:
+    inputs:
+      rebuild:
+        description: Also compile a fresh native Windows release without build caches
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  actions: read
+jobs:
+  investigate:
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [distributed, native-ci, fresh-native]
+    runs-on: windows-2022
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Prepare Defender and record environment
+        if: matrix.source != 'fresh-native' || inputs.rebuild
+        run: |
+          New-Item -ItemType Directory -Force reports | Out-Null
+          Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsBuildNumber | ConvertTo-Json | Set-Content reports/os.json
+          Get-MpComputerStatus | ConvertTo-Json -Depth 5 | Set-Content reports/defender-before.json
+          Start-Service WinDefend
+          Update-MpSignature
+          $status = Get-MpComputerStatus
+          $status | ConvertTo-Json -Depth 5 | Set-Content reports/defender-updated.json
+          if (-not $status.AMServiceEnabled -or -not $status.AntivirusEnabled -or -not $status.RealTimeProtectionEnabled) {
+            throw 'Defender is unavailable/inactive; results are inconclusive. No protection settings were weakened.'
+          }
+      - name: Download exact distributed package
+        if: matrix.source == 'distributed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.1.0-dev.1 --repo "$env:GITHUB_REPOSITORY" --pattern OpenPDF-Desktop-0.1.0-windows-x64.zip --dir samples
+          if ($LASTEXITCODE) { throw 'Release download failed.' }
+          ./scripts/defender_scan.ps1 -Path samples/OpenPDF-Desktop-0.1.0-windows-x64.zip -ReportDirectory reports/archive -ExpectedSha256 91489e1e0ba0bf87016d47870e3043bd7c691f297c53b1ab710eff0f29edfe8d
+          Expand-Archive samples/OpenPDF-Desktop-0.1.0-windows-x64.zip samples/extracted
+          ./scripts/defender_scan.ps1 -Path samples/extracted/windows-x64/openpdf.exe -ReportDirectory reports/executable -ExpectedSha256 79e31a1fac8ee0adfe49a6dca3b4b91eb95e2013aa786b4da04fb22fbba14ad8
+          ./scripts/defender_scan.ps1 -Path samples/extracted/windows-x64/pdfium.dll -ReportDirectory reports/pdfium -ExpectedSha256 79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118
+      - name: Download independently compiled native Windows package
+        if: matrix.source == 'native-ci'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 38652821545 --repo "$env:GITHUB_REPOSITORY" --name openpdf-windows-x64 --dir samples
+          if ($LASTEXITCODE) { throw 'CI artifact download failed.' }
+          ./scripts/defender_scan.ps1 -Path samples/dist/OpenPDF-Desktop-0.1.0-windows-x64.zip -ReportDirectory reports/archive
+          Expand-Archive samples/dist/OpenPDF-Desktop-0.1.0-windows-x64.zip samples/extracted
+          ./scripts/defender_scan.ps1 -Path samples/extracted/windows-x64/openpdf.exe -ReportDirectory reports/executable
+          ./scripts/defender_scan.ps1 -Path samples/extracted/windows-x64/pdfium.dll -ReportDirectory reports/pdfium -ExpectedSha256 79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118
+      - name: Build from locked source without caches
+        if: matrix.source == 'fresh-native' && inputs.rebuild
+        run: |
+          rustup toolchain install 1.99.0 --profile minimal
+          if ($LASTEXITCODE) { throw 'Toolchain installation failed.' }
+          rustc +1.99.0 -Vv | Set-Content reports/compiler.txt
+          git rev-parse HEAD | Set-Content reports/source-revision.txt
+          cargo +1.99.0 build --release --locked -p openpdf-app
+          if ($LASTEXITCODE) { throw 'Fresh build failed.' }
+          ./scripts/defender_scan.ps1 -Path target/release/openpdf-app.exe -ReportDirectory reports/executable
+      - name: Record detection evidence even after failure
+        if: always()
+        run: |
+          New-Item -ItemType Directory -Force reports | Out-Null
+          Get-MpComputerStatus -ErrorAction Continue | ConvertTo-Json -Depth 5 | Set-Content reports/defender-final.json
+          @(Get-MpThreatDetection -ErrorAction Continue) | ConvertTo-Json -Depth 8 | Set-Content reports/threat-history.json
+          Get-WinEvent -LogName 'Microsoft-Windows-Windows Defender/Operational' -MaxEvents 100 -ErrorAction Continue |
+            Select-Object TimeCreated, Id, LevelDisplayName, Message | ConvertTo-Json -Depth 5 | Set-Content reports/events.json
+      - name: Upload diagnostic reports only
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: defender-${{ matrix.source }}
+          path: reports/
+          if-no-files-found: error

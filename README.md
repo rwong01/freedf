@@ -8,6 +8,10 @@ rendering, native PDF annotation/form persistence, and real incremental ECDSA PD
 signatures. See [the feature matrix](docs/FEATURE_MATRIX.md) for incomplete and
 unverified release requirements. Do not infer production readiness from a build.
 
+**Windows build under investigation:** a user reported Defender quarantining
+`openpdf.exe` as `Trojan:Win32/Bearfoos.A!ml`. Do not bypass quarantine to test this
+artifact. See [the investigation and scan procedure](docs/DEFENDER_INVESTIGATION.md).
+
 ## Build and run
 
 Use Rust 1.99 or later. Runtime PDFium is deliberately bundled, never downloaded

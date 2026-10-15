@@ -5,6 +5,11 @@ production hardened**. Source is in https://github.com/rwong01/freedf, branch ma
 See FEATURE_MATRIX.md for every release gate and SECURITY.md before handling
 untrusted documents.
 
+The distributed Windows executable is now under investigation following a user
+report of `Trojan:Win32/Bearfoos.A!ml`. See DEFENDER_INVESTIGATION.md. Earlier build
+and functional test results are not antivirus clearance. Keep the quarantined
+artifact blocked while collecting independent scan/build evidence.
+
 ## Implemented and exercised
 
 Six Rust workspace crates separate the desktop UI, PDF document/edit model,
