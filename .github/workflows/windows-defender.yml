@@ -22,6 +22,8 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
       - name: Prepare Defender and record environment
         if: matrix.source != 'fresh-native' || inputs.rebuild
         run: |
@@ -57,8 +59,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download v0.1.0-dev.1 --repo "$env:GITHUB_REPOSITORY" --pattern OpenPDF-Desktop-0.1.0-windows-x64.zip --dir samples
-          if ($LASTEXITCODE) { throw 'Release download failed.' }
+          # The asset endpoint documents contents:read, without release listing.
+          # PowerShell >=7.4 preserves native stdout bytes when redirecting.
+          if ($PSVersionTable.PSVersion -lt [version]'7.4') { throw 'Binary download requires PowerShell 7.4 or newer.' }
+          New-Item -ItemType Directory -Force samples | Out-Null
+          gh api "repos/$env:GITHUB_REPOSITORY/releases/assets/641990282" -H 'Accept: application/octet-stream' > samples/OpenPDF-Desktop-0.1.0-windows-x64.zip
+          if ($LASTEXITCODE) { throw 'Original input download failed.' }
           ./scripts/defender_scan.ps1 -Path samples/OpenPDF-Desktop-0.1.0-windows-x64.zip -ReportDirectory reports/archive -ExpectedSha256 91489e1e0ba0bf87016d47870e3043bd7c691f297c53b1ab710eff0f29edfe8d
           Expand-Archive samples/OpenPDF-Desktop-0.1.0-windows-x64.zip samples/extracted
           ./scripts/defender_scan.ps1 -Path samples/extracted/windows-x64/openpdf.exe -ReportDirectory reports/executable -ExpectedSha256 79e31a1fac8ee0adfe49a6dca3b4b91eb95e2013aa786b4da04fb22fbba14ad8

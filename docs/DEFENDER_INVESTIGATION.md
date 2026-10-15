@@ -60,6 +60,31 @@ Linux GUI tests while the Windows artifact remains under investigation.
 Microsoft submission is a parallel escalation, not a prerequisite to gathering
 local evidence. No submission or malware-free certification has been made.
 
+## First successful scans
+
+Run `38664666826` scanned the previous native MSVC CI package successfully using
+Defender engine `1.1.26090.9`, platform `4.18.26090.9`, definitions `1.461.31.0`:
+
+| File | SHA-256 | Result |
+| --- | --- | --- |
+| Native CI EXE | `91a054844df3d2045bd7808182288c27aac36916b38ec8d5110ba3d87023056e` | No detection in custom scan |
+| Native CI ZIP | `32739f613df75bbb6690382a0da32e265a5a196d9e751c7155ef34c41f54ab25` | No detection in custom scan |
+| PDFium DLL | `79d4676b656cfb1abcea88f9ade3b4b0826c5200382db5f4ec72a636c598c118` | No detection in custom scan |
+
+The runner reported real-time protection active, but MAPS/cloud reporting off,
+sample submission disabled, and default whole-drive exclusions. The custom scan
+option ignores file exclusions; this result does **not** demonstrate unrestricted
+real-time or cloud/behavioral detection. No sample was executed by this workflow.
+It does not clear the differently compiled distributed EXE or the user's PC.
+
+That run could not fetch the distributed ZIP because release lookup did not
+expose the draft to the read-only workflow token. Automatic approval review
+rejected a proposed repository-write token for downloading the draft. That
+change was not pushed or run. The workflow instead tries the asset-by-ID API,
+which GitHub documents as requiring only contents:read, and verifies the pinned
+hash. If GitHub also denies this request, the original scan remains blocked;
+no elevated token or publication is used. All jobs retain read-only permissions.
+
 References:
 - https://learn.microsoft.com/en-us/defender-endpoint/command-line-arguments-microsoft-defender-antivirus
 - https://www.microsoft.com/en-us/wdsi/threats/malware-encyclopedia-description?name=Trojan%3AWin32%2FBearfoos.A%21ml
