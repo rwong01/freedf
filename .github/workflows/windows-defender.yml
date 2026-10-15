@@ -32,7 +32,13 @@ jobs:
           # Hosted images can ship with real-time protection off. Enable it;
           # never lower protection or add exclusions to make a scan pass.
           Set-MpPreference -DisableRealtimeMonitoring $false
-          Update-MpSignature
+          for ($attempt = 0; $attempt -lt 3; $attempt++) {
+            try { Update-MpSignature; break } catch {
+              if ($attempt -eq 2) { throw }
+              Write-Warning "Signature update failed; retrying: $_"
+              Start-Sleep -Seconds 5
+            }
+          }
           for ($attempt = 0; $attempt -lt 10; $attempt++) {
             $status = Get-MpComputerStatus
             if ($status.RealTimeProtectionEnabled) { break }

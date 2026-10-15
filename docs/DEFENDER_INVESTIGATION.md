@@ -38,6 +38,10 @@ Initial run `38664357117` stopped before downloading samples: the hosted Windows
 image reported active antivirus but disabled real-time protection. This is an
 environment failure, not a malware finding or a clean scan. The preparation step
 now explicitly enables real-time protection and verifies it before proceeding.
+The second run exposed a scanner-version parsing bug (Windows includes a build
+hash in its human-readable version) and a transient Defender update RPC failure.
+The script now sorts numeric version components and retries updates up to three
+times. Neither failed attempt is a clean scan or a malware finding.
 
 A no-detection result is specific to that artifact and scanner configuration.
 Windows Server CI can differ from consumer Windows cloud/behavioral detection.

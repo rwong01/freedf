@@ -38,7 +38,11 @@ try {
     $report.authenticode = Get-AuthenticodeSignature -LiteralPath $file.FullName |
         Select-Object Status, StatusMessage
     $candidates = @(Get-ChildItem "$env:ProgramData\Microsoft\Windows Defender\Platform\*\MpCmdRun.exe" -ErrorAction SilentlyContinue |
-        Sort-Object { [version]$_.VersionInfo.FileVersion } -Descending)
+        Sort-Object {
+            # FileVersion includes a parenthesized build hash on some platforms.
+            [version]::new($_.VersionInfo.FileMajorPart, $_.VersionInfo.FileMinorPart,
+                $_.VersionInfo.FileBuildPart, $_.VersionInfo.FilePrivatePart)
+        } -Descending)
     $scanner = if ($candidates.Count) { $candidates[0].FullName } else {
         "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
     }
